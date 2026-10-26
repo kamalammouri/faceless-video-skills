@@ -1,0 +1,15 @@
+# secrets and local state
+.env
+*.env
+.flow-profile/
+profile/
+
+# generated media and build outputs
+*.mp4
+*.wav
+*.mp3
+flow/
+build*/
+node_modules/
+__pycache__/
+*.log
