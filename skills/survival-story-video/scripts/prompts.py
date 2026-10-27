@@ -18,6 +18,7 @@ shots.json = [ {"i": 1, "sentence": "...", "family": "scene", "scene": "the char
   family: scene | icon | schema | metaphor | map | card | chart | title      (card/chart/title are rendered by code: no prompt)
   composition (optional, rotated automatically if missing): wide | medium | close | cutaway | overhead | pov
   nochar: true  -> the recurring character sheet is not added (a scene with other people only)
+  withchar: true -> adds the character sheet to a metaphor (by default only scenes carry it)
   costume: "..." -> overrides the brief's costume for this shot only (rank or season changes)
   Flow prompts are built only for scene / icon / schema / metaphor / map.
 """
@@ -102,10 +103,11 @@ def build(shots, st):
         comp = s.get("composition") or (next(comps) if fam == "scene" else "")
         dark = bool(s.get("dark"))
         body = FAMILY_TEMPLATE[fam].format(comp=COMPOSITIONS.get(comp, "").format(pov_hands=st["pov_hands"]), scene=s["scene"].rstrip("."),
-                                           scene_bg=st["dark_scene_bg"] if dark else st["scene_bg"],
+                                           scene_bg=st["dark_scene_bg"] if dark else (st.get("scene_bg_nochar", st["scene_bg"]) if s.get("nochar") else st["scene_bg"]),
                                            insert_bg=st["dark_insert_bg"] if dark else st["insert_bg"])
-        with_char = fam in ("scene", "metaphor") and not s.get("nochar")
-        parts = [st["prefix"], character_sentence(st, s.get("costume")) if with_char else "", st["setting"] if fam == "scene" else "", body,
+        with_char = (fam == "scene" and not s.get("nochar")) or (fam == "metaphor" and s.get("withchar"))
+        prefix = st["prefix"] if fam == "scene" else st.get("insert_prefix", st["prefix"])
+        parts = [prefix, character_sentence(st, s.get("costume")) if with_char else "", st["setting"] if fam == "scene" else "", body,
                  st["dark"] if dark else "", st["suffix"]]
         out.append({"file": s.get("file") or f"F{s['i']:03d}", "i": s["i"], "family": fam, "prompt": re.sub(r"\s+", " ", " ".join(p for p in parts if p)).strip()})
     return out

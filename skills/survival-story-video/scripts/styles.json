@@ -1,5 +1,5 @@
 {
-  "_doc": "Character styles of the channel. prompts.py picks one (--style, else brief.json, else 'default') and assembles every Flow prompt from it. Slots: {costume} in 'character' is filled from brief.json character.costume, else from the style's own 'costume'. 'thumbnail' is a template for the thumbnail prompt (filled by hand or by the orchestrator). 'qc' is the short description given to the Image QC agent. Human-readable catalogue: references/character-styles.md.",
+  "_doc": "Character styles of the channel. prompts.py picks one (--style, else brief.json, else 'default') and assembles every Flow prompt from it. Slots: {costume} in 'character' is filled from brief.json character.costume, else from the style's own 'costume'. 'thumbnail' is a template for the thumbnail prompt (filled by hand or by the orchestrator). 'qc' is the short description given to the Image QC agent. Human-readable catalogue: references/character-styles.md. 'insert_prefix' replaces 'prefix' for icon/schema/metaphor/map (plain background, no painted set). 'scene_bg_nochar' replaces 'scene_bg' on scenes without the recurring character. The character sheet goes into scene shots only; a metaphor gets it only with withchar: true.",
   "default": "stickman-meme",
   "styles": {
     "stickman-meme": {
@@ -15,7 +15,9 @@
       "pov_hands": "the character's simple white cartoon hands visible at the bottom of the frame",
       "suffix": "no text, no letters, no numbers, no speech bubbles, no signs, no labels, no watermark.",
       "thumbnail": "{prefix} Split composition with a thin vertical divider: on the left half {character} sweating, worried, mouth trembling, {situation_before}; on the right half the same character {costume_after}, smug half-closed eyes and a confident smile, {situation_after}; {setting}; a large empty band across the top for text. {suffix}",
-      "qc": "very large smooth white round head, rage-comic face (simple black eyes, expressive eyebrows, hand-drawn mouth), thin white body, thick black outlines; other people are grey faceless stick figures; costume as given in the brief"
+      "qc": "very large smooth white round head, rage-comic face (simple black eyes, expressive eyebrows, hand-drawn mouth), thin white body, thick black outlines; other people are grey faceless stick figures; costume as given in the brief",
+      "insert_prefix": "Bold cartoon illustration, thick black ink outlines, saturated colours, flat plain background, 16:9 wide format.",
+      "scene_bg_nochar": "Full painted set with real depth; any people are small grey stick figures with blank faces."
     },
     "egg-headphones": {
       "label": "Tête d'œuf et casque orange : storybook crème, crayon doux (style maison d'origine, validé sur 65 images)",
@@ -30,7 +32,9 @@
       "pov_hands": "the character's mitten hands visible at the bottom of the frame",
       "suffix": "no text, no letters, no numbers, no speech bubbles, no signs, no labels, no watermark.",
       "thumbnail": "{prefix} {character} Close-up of the character on the right half of the frame, the left half empty, dark slate-blue background with a single warm orange light, {emotion}, holding {prop}. {suffix}",
-      "qc": "smooth white egg head, large orange-brown over-ear headphones, dusty-blue t-shirt, dark mittens, thin stick limbs"
+      "qc": "smooth white egg head, large orange-brown over-ear headphones, dusty-blue t-shirt, dark mittens, thin stick limbs",
+      "insert_prefix": "Modern storybook illustration, soft textured pencil shading, clean minimalist composition, generous empty space, 16:9 wide format.",
+      "scene_bg_nochar": "Full coloured set with simple flat shapes and a soft gradient sky or wall; any people are small simple figures in the background."
     },
     "caveman-duo": {
       "label": "Duo d'hommes des cavernes cartoon : gros yeux, membres en bâtons, couleurs saturées (miniatures Apefully / The Hidden Bargain)",
@@ -45,7 +49,9 @@
       "pov_hands": "the character's cartoon hands visible at the bottom of the frame",
       "suffix": "no text, no letters, no numbers, no speech bubbles, no signs, no labels, no watermark.",
       "thumbnail": "{prefix} {character} {emotion} (shock, sweat drops, tears), one single prop that says the subject: {prop}, {setting} at {moment}, a large empty band across the top for text. {suffix}",
-      "qc": "two cavemen (man and woman), spotted fur tunics, messy brown hair, big round eyes, thin stick limbs"
+      "qc": "two cavemen (man and woman), spotted fur tunics, messy brown hair, big round eyes, thin stick limbs",
+      "insert_prefix": "Bold cartoon illustration, thick black ink outlines, saturated colours, flat plain background, 16:9 wide format.",
+      "scene_bg_nochar": "Full painted set; any people are small simple cartoon figures in the background."
     },
     "storybook-human": {
       "label": "Humain peint, style film d'animation années 90 : un protagoniste réaliste, décors peints chauds (intérieur des vidéos Galon Zéro)",
@@ -60,7 +66,9 @@
       "pov_hands": "the character's hands visible at the bottom of the frame",
       "suffix": "no text, no letters, no numbers, no speech bubbles, no signs, no labels, no watermark.",
       "thumbnail": "{prefix} {character} Close-up, {emotion}, {prop}, {setting}, a large empty band across the top for text. {suffix}",
-      "qc": "young man, short black hair, round calm face, thick eyebrows, costume as given in the brief; painterly anime style, no outlines thicker than a pencil line"
+      "qc": "young man, short black hair, round calm face, thick eyebrows, costume as given in the brief; painterly anime style, no outlines thicker than a pencil line",
+      "insert_prefix": "Hand-painted animation film illustration, clean line art, muted earthy palette, flat plain background, 16:9 wide format.",
+      "scene_bg_nochar": "Full painted set with depth and period-accurate props; any people drawn with the same care, none singled out."
     },
     "thin-line": {
       "label": "Trait fin générique : fond crème, encre noire fine, pastels, personnages à tête ronde blanche (explainers Apefully anciens)",
@@ -75,7 +83,9 @@
       "pov_hands": "the character's simple white hands visible at the bottom of the frame",
       "suffix": "no text, no letters, no numbers, no speech bubbles, no signs, no labels, no watermark.",
       "thumbnail": "{prefix} {character} {emotion}, {prop}, the right half of the frame empty. {suffix}",
-      "qc": "round white head, dot eyes, thin stick limbs, thin black outline, pastel fills"
+      "qc": "round white head, dot eyes, thin stick limbs, thin black outline, pastel fills",
+      "insert_prefix": "Minimal hand-drawn explainer illustration, thin black ink outline, flat pastel fills, plain cream paper background, 16:9, centred composition, generous empty space.",
+      "scene_bg_nochar": "Simple flat set with two or three pastel shapes; any people are small round-headed figures."
     }
   }
 }

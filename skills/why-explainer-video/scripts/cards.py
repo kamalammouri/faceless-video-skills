@@ -9,7 +9,7 @@ that says what the number is (clock, calendar, fuel, thermometer...), and consec
   card("gauge", "412 TABLETS", "of 730", value=0.56, icon="pills")   # number + progress bar
   python cards.py   -> writes cards_demo.jpg (all icons and layouts) for a visual check
 
-Icons: clock, calendar, fuel, thermo, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart, people
+Icons: clock, calendar, fuel, thermo, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart, people, hair, dna
 """
 import math, pathlib, sys
 from PIL import Image, ImageDraw, ImageFont
@@ -155,6 +155,28 @@ def ic_heart(d, x, y, s):
     d.polygon([(x + s * 0.03, y + s * 0.42), (x + s * 0.97, y + s * 0.42), (cx, y + s)], fill=TERRA)
     d.line([(x + s * 0.04, y + s * 0.42), (cx, y + s), (x + s * 0.96, y + s * 0.42)], fill=INK, width=LW)
     d.ellipse([x + s * 0.2, y + s * 0.3, x + s * 0.8, y + s * 0.5], fill=TERRA)
+
+def ic_hair(d, x, y, s):
+    """A round head seen from the front with a thin horseshoe of hair and a bare crown."""
+    cx, cy = x + s / 2, y + s * 0.55
+    d.ellipse([x + s * 0.12, y + s * 0.12, x + s * 0.88, y + s * 0.98], fill=WHITE, outline=INK, width=LW)
+    for k in range(7):                                                               # side hairs, left and right
+        t = math.radians(150 + k * 10); r = s * 0.40
+        d.line([cx - r * math.cos(t) * 0.95, cy - r * math.sin(t) * 0.95, cx - r * math.cos(t) * 1.15, cy - r * math.sin(t) * 1.15], fill=INK, width=5)
+        d.line([cx + r * math.cos(t) * 0.95, cy - r * math.sin(t) * 0.95, cx + r * math.cos(t) * 1.15, cy - r * math.sin(t) * 1.15], fill=INK, width=5)
+    for k in (-1, 0, 1):                                                             # three lonely hairs on top
+        d.line([cx + k * s * 0.08, y + s * 0.13, cx + k * s * 0.14, y - s * 0.02], fill=INK, width=4)
+    d.ellipse([cx - s * 0.2 - 6, cy - 6, cx - s * 0.2 + 6, cy + 6], fill=INK); d.ellipse([cx + s * 0.2 - 6, cy - 6, cx + s * 0.2 + 6, cy + 6], fill=INK)
+
+def ic_dna(d, x, y, s):
+    """Double helix: two sine strands with rungs."""
+    n = 40; pts_a, pts_b = [], []
+    for i in range(n + 1):
+        t = i / n; yy = y + s * t; ph = t * math.pi * 2
+        pts_a.append((x + s / 2 + s * 0.3 * math.sin(ph), yy)); pts_b.append((x + s / 2 - s * 0.3 * math.sin(ph), yy))
+    for i in range(0, n + 1, 5):
+        if abs(pts_a[i][0] - pts_b[i][0]) > s * 0.12: d.line([pts_a[i], pts_b[i]], fill=TERRA, width=5)
+    d.line(pts_a, fill=INK, width=LW); d.line(pts_b, fill=BLUE, width=LW)
 
 ICONS = {n[3:]: f for n, f in globals().items() if n.startswith("ic_")}
 
