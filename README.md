@@ -48,7 +48,8 @@ cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
     └── flow/
     ├── browser.mjs              # opens a real Chrome on Google Flow with a persistent profile (CDP :9222)
     ├── login.mjs                # waits for YOU to sign in (never types credentials)
-    ├── batch.mjs                # pastes every prompt of prompts.json, downloads each image, resumable
+    ├── batch.mjs                # pastes every prompt of prompts.json, downloads each image, resumable, stops when Flow blocks
+    ├── harvest.mjs              # recovers images Flow generated but batch.mjs missed (+ harvest_sheet.py contact sheet)
     ├── cdp.mjs                  # shared Playwright attach helper
     └── convert.py               # JPEG → PNG for the build scripts
 ```

@@ -1,18 +1,21 @@
 // Pastes every prompt of prompts.json into Google Flow (direct image mode), waits for the result tile, downloads it. Resumable.
-//   PACE=12000 node scripts/flow/batch.mjs prompts.json flow/<video>
+//   PACE=45000 node scripts/flow/batch.mjs prompts.json flow/<video>
 // prompts.json = [{"file": "F001", "prompt": "..."}, ...]. A file already present in the output folder is skipped.
-// Env: PACE (ms pause after each image, 12000 keeps under Flow's rate limit), WAIT (ms max per image, 150000),
-//      QUEUE (ms to see the prompt appear in a result tile, 20000). Output: <out>/<file>.jpg (or .png/.webp as served).
+// Env: PACE (ms pause after each image, 45000 keeps under Flow's "unusual activity" detector; 12000 got blocked after ~30 images),
+//      WAIT (ms max per image, 150000), MAXFAIL (consecutive failure cards before the run stops, 3). Output: <out>/<file>.jpg (or .png/.webp).
 // Flow UI (flow.google.com, October 2026): prompt bar at the bottom with the textbox "Que voulez-vous créer ?", the "Agent"
-// toggle OFF (direct mode), the settings trigger set to Image · 16:9 · x1, and the button "Lancer la génération". Each result is a
-// `group` in <main> whose text carries the full prompt and whose <img> is the 1376×768 picture. Only a tile that contains THIS
-// prompt and whose image URL was not on the page before the click is accepted (older thumbnails of the project load late).
+// toggle OFF (direct mode), the settings trigger set to Image · 16:9 · x1. Results are `group`s in a virtual-scrolled list, NEWEST
+// FIRST: a fresh tile carries the full prompt as its accessible name, then Flow replaces it with a short caption (so never rely on
+// the prompt text alone). A refused generation is a `group` whose text starts with "Échec" (unusual activity, free of charge).
+// Success = the newest tile shows an <img> ≥ 512 px whose URL was not on the page before the click. Failure = the number of
+// failure cards grew. After MAXFAIL consecutive failures the run stops: wait 30 min or more, then run the same command again.
+// If tiles were generated but not downloaded (timeouts), run harvest.mjs to recover them from the project.
 import fs from 'node:fs';
 import path from 'node:path';
 import { attach, sleep, stamp } from './cdp.mjs';
 
 const [src = 'prompts.json', out = 'flow/out'] = process.argv.slice(2);
-const PACE = Number(process.env.PACE || 12000), WAIT = Number(process.env.WAIT || 150_000), QUEUE = Number(process.env.QUEUE || 20_000);
+const PACE = Number(process.env.PACE || 45_000), WAIT = Number(process.env.WAIT || 150_000), MAXFAIL = Number(process.env.MAXFAIL || 3);
 const prompts = JSON.parse(fs.readFileSync(src, 'utf8'));
 fs.mkdirSync(out, { recursive: true });
 const done = new Set(fs.readdirSync(out).filter(f => !/\.test\./.test(f)).map(f => f.replace(/\.(jpg|jpeg|png|webp)$/i, '')));
@@ -22,8 +25,10 @@ console.log(`${stamp()} ${prompts.length} prompts, ${todo.length} to generate, p
 const { page } = await attach(); page.setDefaultTimeout(15_000);
 const box = () => page.getByRole('textbox', { name: /Que voulez-vous créer|What do you want to create/i }).first();
 const genButton = () => page.getByRole('button', { name: /Lancer la génération|^Generate$|Générer/i }).first();
-const failed = () => page.getByText(/Échec|Failed|activité inhabituelle|unusual activity/i).first();
+const groups = () => page.locator('main [role="group"]');
+const failCount = () => groups().filter({ hasText: /^\s*(Échec|Failed)/ }).count();
 const bigImages = () => page.evaluate(() => [...document.querySelectorAll('main img')].filter(i => i.naturalWidth >= 512).map(i => i.src));
+const scrollTop = () => page.evaluate(() => { const c = document.querySelector('.cdk-virtual-scrollable'); if (c) c.scrollTop = 0; });
 
 async function ensureDirectMode() {
   const agent = page.getByRole('button', { name: /^Agent$/ }).first();
@@ -32,8 +37,13 @@ async function ensureDirectMode() {
   const label = (await trig.innerText().catch(() => '')).replace(/\s+/g, ' ');
   if (!/x1/.test(label)) { await trig.click(); await sleep(800); await page.getByRole('radio', { name: /^Image$/ }).first().click({ force: true }).catch(() => {}); await page.getByRole('radio', { name: /^16:9$/ }).first().click({ force: true }).catch(() => {}); await page.getByRole('radio', { name: /^x1$/ }).first().click({ force: true }).catch(() => {}); await page.keyboard.press('Escape'); await sleep(500); console.log(`${stamp()} settings set to Image · 16:9 · x1 (was "${label}")`); }
 }
-async function tileFor(key) {  // the result group that carries this prompt
-  return page.locator('main [role="group"]').filter({ hasText: key }).first();
+async function newImage(before, key) {  // URL of a fresh ≥512 px image: in the tile carrying the prompt, else in the newest tile
+  const cand = [groups().filter({ hasText: key }).first(), groups().first()];
+  for (const g of cand) {
+    const u = await g.locator('img').first().evaluate(i => i.naturalWidth >= 512 ? i.src : '').catch(() => '');
+    if (u && !before.has(u)) return u;
+  }
+  return '';
 }
 async function download(srcUrl, file) {
   const { b64, type } = await page.evaluate(async (u) => {
@@ -46,29 +56,31 @@ async function download(srcUrl, file) {
 }
 
 await ensureDirectMode();
-let ok = 0, skipped = 0;
+let ok = 0, skipped = 0, streak = 0;
 for (const [k, p] of todo.entries()) {
   const key = p.prompt.slice(0, 60);
   try {
-    const before = new Set(await bigImages());
+    await scrollTop();
+    const before = new Set(await bigImages()); const fails0 = await failCount();
     const b = box(); await b.click(); await b.fill(p.prompt); await sleep(300);
     const g = genButton();
     if (await g.isDisabled().catch(() => true)) { console.log(`${stamp()} ${p.file} SKIP: generate button disabled (no credits or empty prompt)`); skipped++; await sleep(PACE); continue; }
     await g.click();
-    const q0 = Date.now(); let tile = null;
-    while (Date.now() - q0 < QUEUE) { const t = await tileFor(key); if (await t.count()) { tile = t; break; } await sleep(1000); }
-    if (!tile) { console.log(`${stamp()} ${p.file} NOT QUEUED (no result tile carries the prompt)`); skipped++; await sleep(PACE); continue; }
-    const w0 = Date.now(); let got = false;
+    const w0 = Date.now(); let got = false, failed = false;
     while (Date.now() - w0 < WAIT) {
-      if (await failed().isVisible().catch(() => false)) { console.log(`${stamp()} ${p.file} FAILED card shown: pausing 2 min`); await sleep(120_000); break; }
-      const srcUrl = await tile.locator('img').first().evaluate(i => i.naturalWidth >= 512 ? i.src : '').catch(() => '');
-      if (srcUrl && !before.has(srcUrl)) {
-        await sleep(1500); const dst = await download(srcUrl, p.file); ok++; got = true;
-        console.log(`${stamp()} ${p.file} ok -> ${dst} (${k + 1}/${todo.length}, ${Math.round((Date.now() - q0) / 1000)} s)`); break;
-      }
-      await sleep(2000);
+      await sleep(2000); await scrollTop();
+      if (await failCount() > fails0) { failed = true; break; }
+      const srcUrl = await newImage(before, key);
+      if (srcUrl) { await sleep(1500); const dst = await download(srcUrl, p.file); ok++; got = true; streak = 0; console.log(`${stamp()} ${p.file} ok -> ${dst} (${k + 1}/${todo.length}, ${Math.round((Date.now() - w0) / 1000)} s)`); break; }
     }
-    if (!got) { console.log(`${stamp()} ${p.file} TIMEOUT after ${WAIT / 1000} s`); skipped++; }
+    if (failed) {
+      streak++; skipped++;
+      const pause = Math.min(streak * 180_000, 600_000);
+      console.log(`${stamp()} ${p.file} REFUSED by Flow (failure card, ${streak}/${MAXFAIL} in a row)${streak < MAXFAIL ? `: pausing ${pause / 60_000} min` : ''}`);
+      if (streak >= MAXFAIL) { console.log(`${stamp()} Flow is blocking generations ("unusual activity"). Stopping: wait 30 min or more, then run the same command again.`); break; }
+      await sleep(pause); continue;
+    }
+    if (!got) { console.log(`${stamp()} ${p.file} TIMEOUT after ${WAIT / 1000} s (if the tile completed later, harvest.mjs recovers it)`); skipped++; }
   } catch (e) { console.log(`${stamp()} ${p.file} ERROR ${e.message.split('\n')[0]}`); skipped++; }
   await sleep(PACE);
 }
