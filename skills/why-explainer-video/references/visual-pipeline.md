@@ -56,7 +56,7 @@ Viser la part de la vidéo à 542 k vues (plus de schémas) plutôt que celle à
 
 ## 4. Préfixe de style (à placer devant chaque prompt d'image)
 
-Préfixe **maison**, validé sur 65 images Flow (personnage récurrent à tête d'œuf et casque orange) : voir `flow-automation.md`, section « Préfixe de style maison ». C'est celui à utiliser par défaut pour la chaîne. Le préfixe ci-dessous est la variante « trait fin » générique, pour une autre chaîne ou un autre style.
+Le préfixe et la fiche du personnage viennent du style choisi au brief (`scripts/styles.json`, catalogue `references/character-styles.md`) ; `prompts.py` les assemble dans chaque prompt. Le préfixe ci-dessous est le style `thin-line`, gardé pour mémoire.
 
 ```
 Minimal hand-drawn explainer illustration, thin black ink outline, flat pastel fills
@@ -114,7 +114,7 @@ Ajouter en fin de liste : la miniature (voir `publication-seo.md`) et la carte f
 
 
 ### Outils de production (dans `scripts/`)
-- `prompts.py shots.json` : construit `prompts.json` pour Flow à partir de la shot list (préfixe maison, fiche personnage, décor, gabarit par famille, cadrage en rotation, variante sombre, suffixe anti-texte) et **lint** la liste : mots interdits qui déclenchent des bulles, 4 scènes de suite, deux visuels de données de suite, quasi-doublons, plus de 14 images sans visuel de données, carte sans icône. Corriger les erreurs avant de générer.
+- `prompts.py shots.json` : construit `prompts.json` pour Flow à partir de la shot list (préfixe, fiche et costume du style de `brief.json`, décor, gabarit par famille, cadrage en rotation, variante sombre, suffixe anti-texte) et **lint** la liste : mots interdits qui déclenchent des bulles, 4 scènes de suite, deux visuels de données de suite, quasi-doublons, plus de 14 images sans visuel de données, carte sans icône. Corriger les erreurs avant de générer.
 - `cards.py` : cartes de chiffres avec icône. `charts.py` : 24 patrons de graphiques, jauges, frises et schémas.
 - `build_slideshow.py shots.json voice.wav timing.json out.mp4 --flow flow/<video>` : monte la vidéo, chaque image tenue jusqu'à la phrase suivante ; cartes, graphiques et titres rendus par code, images Flow chargées par nom, carte de secours si une image manque.
 - `scripts/flow/` : génération automatique des images Flow (`references/flow-automation.md`).

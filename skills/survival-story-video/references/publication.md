@@ -61,7 +61,7 @@ Mettre les chapitres aux jours-repères : ils servent de mini-hooks dans la barr
 **Fin de vidéo (fin ouverte) :** pas de call-to-action parlé. Une carte « Day 366 » ou le titre de l'épisode 2 sur fond noir, 5 secondes.
 
 **Miniature :**
-- En mode diaporama (défaut de la chaîne) : le personnage récurrent en gros plan sur la moitié droite, moitié gauche vide, une seule lueur chaude, fond ardoise sombre (prompt dans `flow-automation.md`).
+- En mode diaporama (défaut de la chaîne) : le gabarit `thumbnail` du style choisi au brief (`scripts/styles.json`) : pour `stickman-meme`, composition coupée en deux, le personnage perdant à gauche et gagnant à droite dans le même décor ; pour les autres styles, le personnage récurrent en gros plan sur la moitié droite, moitié gauche vide, une seule lueur chaude.
 - En style documentaire : gros plan sur les mains ou un objet-clé, dans le noir, une seule lueur chaude.
 - Texte par code, jamais par le générateur : 2 à 4 mots en jaune (242,196,70) Impact contour noir, le motif récurrent (l'heure, le jour) en rouge (214,72,48), image 1280 × 720.
 - Une image du lot avec de l'espace vide fait une miniature provisoire acceptable en attendant l'image dédiée.

@@ -6,6 +6,8 @@ Un seul rédacteur qui écrit, dessine, vérifie et publie finit par se répéte
 
 | Étape | Agents en parallèle | Entrée | Sortie attendue |
 |---|---|---|---|
+| Au brief, tour 1, si le style est « custom » | **Character designer** | la phrase de l'utilisateur, `scripts/styles.json`, les étapes du récit | fiche de personnage à faire valider par l'utilisateur |
+| Au brief, tour 2, avant tout brouillon | **Story architect** | sujet, règles du format, `brief.json`, vidéos déjà publiées | 3 angles ; l'utilisateur en choisit un |
 | Après le brouillon du script | **Fact-checker** + **Script critic** | le script | liste de corrections, chacune avec la phrase visée |
 | Après la liste d'images | **Visual director** + **Prompt auditor** | shot list + préfixe de style | shot list corrigée, prompts réécrits |
 | Après la génération des images | **Image QC** (vision) | planche contact + shot list | liste des images à régénérer avec le nouveau prompt |
@@ -14,6 +16,35 @@ Un seul rédacteur qui écrit, dessine, vérifie et publie finit par se répéte
 L'orchestrateur ne refait pas le travail des agents : il applique leurs corrections, relance ce qui doit l'être (régénération Flow des rejets), et passe la checklist finale.
 
 ## Briefs (à copier dans le prompt de l'agent, puis compléter les crochets)
+
+### Story architect
+```
+Tu conçois des angles de scénario pour une vidéo YouTube [format]. Voici les règles du format (structure, paramètres, types de
+twist ou de retournement), le sujet, le brief (style de personnage, langue, durée, ton) et la liste des vidéos déjà publiées.
+Rends EXACTEMENT trois angles A, B, C, différents entre eux sur au moins trois points (décor ou époque, événement
+déclencheur, nature de la menace ou de la fausse croyance, type de twist, motif récurrent), et jamais proches d'une vidéo
+déjà publiée. Pour chaque angle, dans cet ordre : titre au gabarit de la chaîne ; logline en une phrase à la 2ᵉ personne ;
+hook = les deux premières phrases ; 3 temps forts avec jour-repère ou chapitre (nombres précis et inégaux) ; motif récurrent
+et son changement de sens à la fin ; type de twist et dernière phrase ; 3 faits vérifiables avec leur source probable
+(recherche web rapide, [à vérifier] si doute) ; costume du personnage au début et à la fin ; une ligne de risque.
+Termine par « Recommandé : X, parce que … ». Rien d'autre : ni script, ni shot list.
+Format : [RÈGLES DU FORMAT]  Sujet : [SUJET]  Brief : [BRIEF.JSON]  Déjà publié : [LISTE]
+```
+
+### Character designer
+```
+Tu dessines le personnage récurrent d'un diaporama d'images fixes généré dans Google Flow (il doit être identique sur 60 à
+300 images). Voici la description de l'utilisateur, le sujet, les styles existants (scripts/styles.json, avec leurs phrases
+« prefix ») et les étapes du récit si le costume change. Rends, en anglais : (1) la fiche : UNE phrase de 60 mots max,
+commençant par « Recurring character: » et finissant par « Keep this exact character design in every image. », qui fixe
+seulement ce qu'un générateur garde stable (tête, yeux, sourcils, cheveux, corpulence, costume de base avec {costume} si le
+costume change) ; pas de nom, pas d'âge en chiffres, pas de trait de caractère ; (2) l'id du style existant dont le préfixe
+convient (ou un nouveau préfixe de même longueur) ; (3) les costumes par étape, « étape | wearing … », 6 à 12 mots ;
+(4) quatre expressions utilisables dans un texte de scène ; (5) un accessoire signature ; (6) la phrase QC (15 à 25 mots) ;
+(7) le gabarit de miniature ; (8) trois prompts de test complets (plan large, gros plan mains, variante sombre).
+Rien d'autre : ni script, ni shot list.
+Description : [PHRASE]  Sujet : [SUJET]  Styles : [STYLES.JSON]  Étapes : [LISTE]
+```
 
 ### Fact-checker
 ```
@@ -54,10 +85,10 @@ Tu relis des prompts d'images pour un générateur (Google Flow) qui dessine TOU
 (1) supprime ou reformule tout ce qui déclenche une bulle de dialogue, un panneau, un écran avec du texte, un cadran avec
 des chiffres, un livre ouvert, une étiquette : « talking », « calling », « says », « sign », « label », « screen showing »,
 « reads », « written » sont interdits ; décrire la posture à la place (« handset held to the head, mouth closed ») ;
-(2) vérifie que la fiche du personnage récurrent est présente mot pour mot ; (3) vérifie la mention du décor ;
+(2) vérifie que la fiche du personnage récurrent du brief est présente mot pour mot, avec le costume de l'étape ; (3) vérifie la mention du décor ;
 (4) vérifie que la phrase de fin est « no text, no letters, no numbers, no speech bubbles, no signs » ; (5) signale deux
 prompts trop proches (même scène) et propose une variante de cadrage. Rends le tableau : fichier | prompt corrigé | motif.
-Préfixe de style : [PRÉFIXE]
+Préfixe de style : [PRÉFIXE]  Fiche du personnage : [FICHE PERSONNAGE de brief.json / styles.json]
 Prompts : [PROMPTS]
 ```
 
@@ -65,10 +96,11 @@ Prompts : [PROMPTS]
 ```
 Tu contrôles des images générées pour un diaporama. Regarde la planche contact jointe (chaque vignette porte son nom de
 fichier). Rejette toute image qui a : une bulle de dialogue (vide ou non), du texte ou des lettres, des chiffres, un
-personnage différent de la fiche (tête ronde blanche, casque orange, t-shirt bleu gris), un cadrage vertical ou une bande
-noire, un objet absurde (membres en trop, objet fondu), ou une scène qui ne correspond pas à la phrase. Pour chaque rejet :
+personnage différent de la fiche ci-dessous (forme et couleur de la tête, style du visage, corps, épaisseur du trait, costume
+de l'étape), un second personnage aussi détaillé que le récurrent, un cadrage vertical ou une bande noire, un objet absurde (membres en trop, objet fondu), ou une scène qui ne correspond pas à la phrase. Pour chaque rejet :
 fichier | défaut | prompt réécrit pour l'éviter. Rends aussi la liste des fichiers acceptés. Ne commente pas le style.
 Planche : [CHEMIN]  Shot list : [SHOT LIST]
+Fiche du personnage : [phrase « qc » du style dans scripts/styles.json + fiche custom de brief.json s'il y en a une]
 ```
 
 ### Publication checker
@@ -82,6 +114,7 @@ Fiche : [FICHE]  Temps de voix : [VOICE.JSON ou liste des débuts de scène]
 ```
 
 ## Règles d'usage
+- Aucun agent ne tourne avant que `brief.json` soit validé par l'utilisateur (`validated_by_user: true`, `references/brief.md`) ; la fiche du personnage vient toujours du brief et de `styles.json`, jamais d'une description écrite de mémoire.
 - Un agent reçoit **tout** ce dont il a besoin dans son brief (le script, la liste, le préfixe) : il ne voit pas la conversation.
 - Les sorties sont des tableaux courts ; l'orchestrateur applique, il ne discute pas.
 - Image QC tourne après chaque lot Flow ; les rejets sont régénérés avec le prompt réécrit (supprimer le `.jpg` et le `.png`, relancer `batch.mjs`), puis Image QC repasse sur les nouvelles vignettes seulement. Deux passes maximum, ensuite remplacer par une carte par code.

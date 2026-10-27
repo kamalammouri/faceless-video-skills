@@ -157,12 +157,12 @@ oversaturated, bright cheerful, plastic look
 
 Mesuré sur deux vidéos de 20 min d'une chaîne faceless à 2,8 M de vues : 300 images fixes, une par phrase, 4 à 5 s chacune, coupes franches, zéro mouvement de caméra, 94 % du temps strictement fixe. Le rythme vient de la fréquence des coupes et de la voix, pas de l'animation.
 
-C'est le **mode par défaut de la chaîne** : le style documentaire sombre des §7 et 8.1 à 8.8 a été testé et n'a pas plu ; le style retenu est crème, trait doux, personnage récurrent (préfixe maison dans `flow-automation.md`), avec une variante « fond ardoise, une lumière orange » pour les scènes de nuit et de danger, qui garde la tension du récit.
+C'est le **mode par défaut de la chaîne** : le style documentaire sombre des §7 et 8.1 à 8.8 a été testé et n'a pas plu ; le style retenu est un diaporama à personnage récurrent dont le style de dessin est choisi au brief (`references/character-styles.md` ; `stickman-meme` par défaut, `egg-headphones` = le crème d'origine), avec une variante « fond ardoise, une lumière orange » pour les scènes de nuit et de danger, qui garde la tension du récit.
 
 Pour produire une vidéo de survie à moindre coût :
 - **Un plan par moment**, pas par phrase : 60 à 70 images Flow pour 11 min (5 à 15 s chacune), générées automatiquement (`flow-automation.md`), plus une vingtaine de cartes par code (heure, jour, litres, degrés, compte à rebours). Une image par phrase (230 images) coûterait 2 h de génération pour un gain invisible.
 - Coupes franches ; garder seulement les deux fondus au noir des silences-armes.
-- Style unique sur toutes les images, préfixe maison en tête de chaque prompt, personnage identique partout (c'est lui qui fait la cohérence) ; `Dark variant` sur les scènes de crise.
+- Style unique sur toutes les images, préfixe et fiche du style de `brief.json` en tête de chaque prompt, personnage identique partout (c'est lui qui fait la cohérence) ; `Dark variant` sur les scènes de crise.
 - Les chiffres (inventaire, jauges, compte à rebours, jours) en images générées par code (matplotlib style « xkcd » ou SVG), jamais par IA : chiffres exacts, labels sans erreur.
 - Texte à l'écran = mot ou chiffre exact de la voix, 1 à 3 mots.
 - Assemblage ffmpeg : liste de concaténation image + durée, piste voix, lit sonore discret.
@@ -184,7 +184,7 @@ Une carte « chiffre seul dans un cadre » lue trois fois de suite fait pauvre :
 
 
 ### Outils de production (dans `scripts/`)
-- `prompts.py shots.json` : construit `prompts.json` pour Flow à partir de la shot list (préfixe maison, fiche personnage, décor, gabarit par famille, cadrage en rotation, variante sombre, suffixe anti-texte) et **lint** la liste : mots interdits qui déclenchent des bulles, 4 scènes de suite, deux visuels de données de suite, quasi-doublons, plus de 14 images sans visuel de données, carte sans icône. Corriger les erreurs avant de générer.
+- `prompts.py shots.json` : construit `prompts.json` pour Flow à partir de la shot list (préfixe, fiche et costume du style de `brief.json`, décor, gabarit par famille, cadrage en rotation, variante sombre, suffixe anti-texte) et **lint** la liste : mots interdits qui déclenchent des bulles, 4 scènes de suite, deux visuels de données de suite, quasi-doublons, plus de 14 images sans visuel de données, carte sans icône. Corriger les erreurs avant de générer.
 - `cards.py` : cartes de chiffres avec icône. `charts.py` : 24 patrons de graphiques, jauges, frises et schémas.
 - `build_slideshow.py shots.json voice.wav timing.json out.mp4 --flow flow/<video>` : monte la vidéo, chaque image tenue jusqu'à la phrase suivante ; cartes, graphiques et titres rendus par code, images Flow chargées par nom, carte de secours si une image manque.
 - `scripts/flow/` : génération automatique des images Flow (`references/flow-automation.md`).

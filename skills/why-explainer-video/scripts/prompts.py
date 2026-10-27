@@ -1,39 +1,40 @@
 """Build Google Flow prompts from a shot list, and lint the shot list for the channel's rhythm rules.
 
-  python prompts.py shots.json             -> prompts.json (for scripts/flow/batch.mjs) + lint report on stdout
-  python prompts.py shots.json --strict    -> exit 1 if the lint finds an error
+  python prompts.py shots.json [--brief brief.json] [--style ID] [--setting "..."] [--strict]
+      -> prompts.json (for scripts/flow/batch.mjs) + lint report on stdout ; --strict exits 1 on a lint error
+  python prompts.py --styles        -> lists the character styles of styles.json
+
+Where the style comes from (first found wins):
+  1. --style ID                       (an id of scripts/styles.json)
+  2. brief.json                       (written at the pre-production brief, references/brief.md ; "--brief path" to point elsewhere)
+       {"style": "stickman-meme", "setting": "a small Antarctic station of three plywood modules on a white plateau",
+        "character": {"costume": "wearing a torn parka", "sheet": null}}
+       character.sheet, when given, REPLACES the style's character sentence (custom character from the Character designer agent).
+  3. "default" of styles.json
+Never edit a prompt by hand: the full prefix + character sheet must be in EVERY prompt, Flow has no memory between generations.
 
 shots.json = [ {"i": 1, "sentence": "...", "family": "scene", "scene": "the character stands at a frosted window, back to viewer",
                 "composition": "wide", "dark": false, "file": "F01"}, ... ]
   family: scene | icon | schema | metaphor | map | card | chart | title      (card/chart/title are rendered by code: no prompt)
   composition (optional, rotated automatically if missing): wide | medium | close | cutaway | overhead | pov
   nochar: true  -> the recurring character sheet is not added (a scene with other people only)
+  costume: "..." -> overrides the brief's costume for this shot only (rank or season changes)
   Flow prompts are built only for scene / icon / schema / metaphor / map.
-
-A STYLE dict at the top holds the channel's house style; edit it once per channel, never per prompt.
 """
-import json, re, sys, itertools
+import json, re, sys, itertools, pathlib
 
-STYLE = {
-    "prefix": "Modern storybook illustration, soft textured pencil shading, gentle ambient lighting, clean minimalist composition, generous empty space, 16:9 wide format.",
-    "character": "Recurring character: a whimsical figure with a smooth matte white egg for a head, small dark dot eyes and thin expressive eyebrows, thin stick-figure arms and legs, wearing a simple dusty-blue t-shirt and dark mittens, with large vintage over-ear headphones in warm orange-brown leather tones around the egg head. Keep this exact character design in every image.",
-    "setting": "",   # one sentence, identical in every scene prompt, e.g. "Setting: a small Antarctic research station of three plywood modules on a white plateau."
-    "scene_bg": "Full coloured set with simple flat shapes and a soft gradient sky or wall, the character small to medium in the frame.",
-    "insert_bg": "Plain cream-coloured paper background, nothing else drawn around the subject, the subject centred with generous empty space.",
-    "dark": "Dark variant: same drawing style, but a dark slate-blue background instead of cream, with a single warm orange light source.",
-    "suffix": "no text, no letters, no numbers, no speech bubbles, no signs, no labels, no watermark.",
-}
+HERE = pathlib.Path(__file__).parent
 COMPOSITIONS = {
     "wide": "Wide shot, the whole set visible, horizon line low,",
     "medium": "Medium shot, waist up, the set suggested behind,",
     "close": "Close-up on hands and one object, the face out of frame,",
     "cutaway": "Cutaway view as if one wall were removed, the inside drawn like a dollhouse,",
     "overhead": "Overhead view looking straight down,",
-    "pov": "First-person point of view, the character's mitten hands visible at the bottom of the frame,",
+    "pov": "First-person point of view, {pov_hands},",
 }
 FAMILY_TEMPLATE = {
     "scene": "{comp} {scene}. {scene_bg}",
-    "icon": "A single isolated object: {scene}. {insert_bg} Thick clean outline, flat pastel fill.",
+    "icon": "A single isolated object: {scene}. {insert_bg} Thick clean outline, flat fill.",
     "schema": "Simple explanatory diagram: {scene}. {insert_bg} Thin outlines, two or three flat colours, thick coloured arrows where motion matters.",
     "metaphor": "Visual metaphor, drawn literally: {scene}. {insert_bg}",
     "map": "Simple flat map silhouette: {scene}. {insert_bg} One red pin, no place names.",
@@ -43,6 +44,29 @@ BANNED = ["talking", "talks", "calling", "says", "saying", "speaks", "speaking",
 DATA = {"card", "chart", "map"}; INSERT = {"icon", "schema", "metaphor", "map", "card", "chart", "title"}
 
 def tokens(s): return set(re.findall(r"[a-z]{4,}", s.lower()))
+
+def arg_value(args, flag):
+    return args[args.index(flag) + 1] if flag in args and args.index(flag) + 1 < len(args) else None
+
+def load_styles(): return json.load(open(HERE / "styles.json", encoding="utf-8"))
+
+def resolve_style(args=()):
+    """Merge styles.json + brief.json + command line into one STYLE dict (see module doc)."""
+    cfg = load_styles(); brief = {}
+    bp = pathlib.Path(arg_value(args, "--brief") or "brief.json")
+    if bp.exists(): brief = json.load(open(bp, encoding="utf-8"))
+    sid = arg_value(args, "--style") or brief.get("style") or cfg["default"]
+    if sid not in cfg["styles"]: sys.exit(f"unknown style '{sid}'. Known: {', '.join(cfg['styles'])}  (python prompts.py --styles)")
+    st = dict(cfg["styles"][sid]); st["id"] = sid
+    ch = brief.get("character") or {}
+    if ch.get("sheet"): st["character"] = ch["sheet"]
+    st["costume"] = ch.get("costume") or st.get("costume", "")
+    setting = arg_value(args, "--setting") or brief.get("setting") or ""
+    st["setting"] = ("Setting: " + setting.rstrip(". ") + ".") if setting and not setting.lower().startswith("setting:") else setting
+    return st
+
+def character_sentence(st, costume=None):
+    return re.sub(r"\s+", " ", st["character"].replace("{costume}", costume if costume is not None else st["costume"])).replace(" ,", ",").strip()
 
 def lint(shots, data_every=14):
     errs, warns = [], []
@@ -70,30 +94,37 @@ def lint(shots, data_every=14):
     if cards_without: errs.append(f"cards without an icon: {cards_without} (use cards.card with an icon)")
     return errs, warns
 
-def build(shots):
+def build(shots, st):
     out, comps = [], itertools.cycle(["wide", "medium", "close", "cutaway", "overhead", "pov"])
     for s in shots:
         fam = s["family"]
         if fam not in FAMILY_TEMPLATE: continue
         comp = s.get("composition") or (next(comps) if fam == "scene" else "")
         dark = bool(s.get("dark"))
-        body = FAMILY_TEMPLATE[fam].format(comp=COMPOSITIONS.get(comp, ""), scene=s["scene"].rstrip("."),
-                                           scene_bg="Full coloured set at night, dark slate-blue tones, one warm light source." if dark else STYLE["scene_bg"],
-                                           insert_bg="Dark slate-blue background, nothing else drawn around the subject, the subject centred." if dark else STYLE["insert_bg"])
-        parts = [STYLE["prefix"], STYLE["character"] if fam in ("scene", "metaphor") and not s.get("nochar") else "", STYLE["setting"] if fam == "scene" else "", body,
-                 STYLE["dark"] if dark else "", STYLE["suffix"]]
+        body = FAMILY_TEMPLATE[fam].format(comp=COMPOSITIONS.get(comp, "").format(pov_hands=st["pov_hands"]), scene=s["scene"].rstrip("."),
+                                           scene_bg=st["dark_scene_bg"] if dark else st["scene_bg"],
+                                           insert_bg=st["dark_insert_bg"] if dark else st["insert_bg"])
+        with_char = fam in ("scene", "metaphor") and not s.get("nochar")
+        parts = [st["prefix"], character_sentence(st, s.get("costume")) if with_char else "", st["setting"] if fam == "scene" else "", body,
+                 st["dark"] if dark else "", st["suffix"]]
         out.append({"file": s.get("file") or f"F{s['i']:03d}", "i": s["i"], "family": fam, "prompt": re.sub(r"\s+", " ", " ".join(p for p in parts if p)).strip()})
     return out
 
 if __name__ == "__main__":
-    src = sys.argv[1] if len(sys.argv) > 1 else "shots.json"
+    args = sys.argv[1:]
+    if "--styles" in args:
+        cfg = load_styles()
+        for sid, st in cfg["styles"].items(): print(f"{sid:18s} {'(default) ' if sid == cfg['default'] else ''}{st['label']}")
+        sys.exit(0)
+    src = next((a for a in args if not a.startswith("--") and (args.index(a) == 0 or args[args.index(a) - 1] not in ("--brief", "--style", "--setting"))), "shots.json")
     shots = json.load(open(src, encoding="utf-8"))
+    st = resolve_style(args)
     errs, warns = lint(shots)
     for e in errs: print("ERROR ", e)
     for w in warns: print("warn  ", w)
-    prompts = build(shots)
+    prompts = build(shots, st)
     json.dump(prompts, open("prompts.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     fams = {}
     for s in shots: fams[s["family"]] = fams.get(s["family"], 0) + 1
-    print(f"{len(prompts)} Flow prompts written to prompts.json | families: {fams} | {len(errs)} errors, {len(warns)} warnings")
-    if "--strict" in sys.argv and errs: sys.exit(1)
+    print(f"{len(prompts)} Flow prompts written to prompts.json | style: {st['id']} | setting: {st['setting'] or '(none)'} | families: {fams} | {len(errs)} errors, {len(warns)} warnings")
+    if "--strict" in args and errs: sys.exit(1)

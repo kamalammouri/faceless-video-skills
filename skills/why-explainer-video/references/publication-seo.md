@@ -52,7 +52,7 @@ messy brown hair, big eyes, stick limbs), [ÉMOTION], [ACCESSOIRE], [DÉCOR] at 
 saturated colors, large empty area at the top for text, 16:9
 ```
 
-Puis ajouter le texte « WHY … ? » en jaune (242,196,70) à contour noir par code (PIL, police Impact, contour 10 px, image 1280 × 720), jamais par le générateur d'images. Le personnage de la chaîne (fiche dans `flow-automation.md`) peut remplacer le duo de mascottes : il relie la miniature au contenu. Laisser une moitié du cadre vide pour le texte.
+Puis ajouter le texte « WHY … ? » en jaune (242,196,70) à contour noir par code (PIL, police Impact, contour 10 px, image 1280 × 720), jamais par le générateur d'images. Le personnage choisi au brief (gabarit `thumbnail` de son style dans `scripts/styles.json`) peut remplacer le duo de mascottes : il relie la miniature au contenu ; pour `stickman-meme`, composition coupée en deux, perdant à gauche, gagnant à droite. Laisser une moitié du cadre vide pour le texte.
 
 ## 3. Chapitres
 

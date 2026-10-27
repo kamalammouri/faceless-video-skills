@@ -25,17 +25,17 @@ UN PARADOXE QUE LE SPECTATEUR PORTE SUR LUI (calvitie, yeux bleus, nausées, vie
 Pourquoi ça marche : le titre promet que la réponse connue est fausse ; la scène d'ouverture fait du spectateur le sujet ; les noms, dates et chiffres donnent la crédibilité qui compense le titre racoleur ; le retournement donne une émotion (« tu n'es pas cassé ») ; la question finale remplit les commentaires.
 
 ## Workflow
-1. **Choisir le sujet** avec le test du miroir (section 1). Si l'utilisateur n'en donne pas, en proposer 3 et prendre le premier. `references/topic-bank.md` pour les idées et les sujets à éviter.
+1. **Brief** (obligatoire, `references/brief.md`) : avant d'écrire quoi que ce soit, poser en une seule salve les questions du tour 1 (sujet s'il manque, **style de personnage**, langue de la voix, livrable) ; filtrer le sujet par le test du miroir (section 1, `references/topic-bank.md`) ; lancer l'agent **Story architect**, faire choisir un des 3 angles (tour 2), écrire `brief.json` et le relire en 3 lignes. Ne jamais sauter le brief, même si le sujet est donné : le style du personnage et l'angle sont toujours validés par l'utilisateur.
 2. **Rassembler les faits** : 3 à 5 études ou scientifiques nommés, avec année, institution et un chiffre chacun. Chercher sur le web ; ne jamais inventer un nom, une année ou un chiffre. Marquer `[vérifié]` dans le brouillon.
 3. **Écrire le script** avec `references/script-template.md` (mécanique de chaque temps, budgets de mots) et les règles de la section 3.
-4. **Construire la shot list** (`shots.json`, format en tête de `scripts/prompts.py`) avec `references/visual-pipeline.md` et les règles de rythme de `references/scene-catalogue.md` (une scène, un insert, une scène ; un visuel de données par minute au moins) ; cartes par `scripts/cards.py`, graphiques et frises par `scripts/charts.py` ; `python scripts/prompts.py shots.json` produit les prompts Flow et lint la liste ; puis audit par les agents Visual director et Prompt auditor.
+4. **Construire la shot list** (`shots.json`, format en tête de `scripts/prompts.py`) avec `references/visual-pipeline.md` et les règles de rythme de `references/scene-catalogue.md` (une scène, un insert, une scène ; un visuel de données par minute au moins) ; cartes par `scripts/cards.py`, graphiques et frises par `scripts/charts.py` ; `python scripts/prompts.py shots.json` lit `brief.json` (style, fiche, costume, décor), produit les prompts Flow et lint la liste ; puis audit par les agents Visual director et Prompt auditor.
 5. **Générer les images** : scènes avec personnage par Google Flow, en automatique avec `references/flow-automation.md` (scripts dans `scripts/flow/`) ; icônes, schémas, graphiques et cartes par code. Puis `python scripts/build_slideshow.py shots.json voice.wav timing.json out.mp4 --flow flow/<video>` et vérifier sur une planche contact.
 6. **Publication** : la fiche complète de `references/publication-seo.md` §0, avec la **catégorie Éducation** toujours écrite, la miniature texte par code, les chapitres calés sur la voix.
 7. **Contrôle qualité** (section 5) puis livraison.
 
 
 ## Agents de production
-Le rédacteur seul se répète ; la production passe par des agents spécialisés lancés en parallèle avec l'outil Agent, chacun avec un brief complet (`references/agents.md`) : **Fact-checker** et **Script critic** après le brouillon ; **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot d'images ; **Publication checker** avant livraison. L'orchestrateur applique leurs tableaux de corrections et relance ce qui doit l'être. Ne jamais sauter Visual director et Image QC : ce sont eux qui empêchent les cartes nues, les bulles vides et les doublons.
+Le rédacteur seul se répète ; la production passe par des agents spécialisés lancés en parallèle avec l'outil Agent, chacun avec un brief complet (`references/agents.md`) : **Story architect** (3 angles au brief) et **Character designer** (fiche d'un style custom) avant le brouillon ; **Fact-checker** et **Script critic** après le brouillon ; **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot d'images ; **Publication checker** avant livraison. L'orchestrateur applique leurs tableaux de corrections et relance ce qui doit l'être. Ne jamais sauter Visual director et Image QC : ce sont eux qui empêchent les cartes nues, les bulles vides et les doublons.
 
 ## 1. Le test du miroir (choix du sujet)
 
@@ -87,9 +87,10 @@ Chapitres YouTube : 8 à 11, de 2 à 3 minutes, nommés « The [Nom] of [Chose] 
 
 Mesuré sur deux vidéos complètes : 297 et 323 images fixes, **4,1 à 4,8 s par image, une image par phrase**, coupes franches, zéro transition, zéro mouvement de caméra, 94 % du temps strictement fixe. Le rythme vient du montage et de la voix, pas de l'animation.
 
-Cinq familles de plans, à mélanger : icône + 1 à 3 mots (35 %), scène avec personnage (25 %), schéma ou comparaison (22 %), graphique de données (10 %), carte-titre (5 %). Style unique : fond crème, trait fin noir, pastels, lettrage manuscrit en capitales, personnages à tête ronde blanche. Un motif visuel récurrent (la scène d'ouverture) revient au milieu et à la fin.
+Cinq familles de plans, à mélanger : icône + 1 à 3 mots (35 %), scène avec personnage (25 %), schéma ou comparaison (22 %), graphique de données (10 %), carte-titre (5 %). Style unique sur toute la vidéo : celui choisi au brief (`references/character-styles.md`, `scripts/styles.json`), personnage identique dans chaque image. Un motif visuel récurrent (la scène d'ouverture) revient au milieu et à la fin.
 
 ## 5. Contrôle qualité avant livraison
+- [ ] `brief.json` validé par l'utilisateur (style de personnage, angle choisi parmi 3, langue, livrable) ; fiche du personnage du style choisi dans chaque prompt et dans le brief Image QC
 - [ ] Sujet validé par le test du miroir ; titre au gabarit « Why [force] [verbe] [trait] ([négation]) »
 - [ ] Ouverture = scène physique à la 2ᵉ personne, en moins de 170 mots
 - [ ] Promesse d'un twist dans le temps 2, tenue dans le temps 6

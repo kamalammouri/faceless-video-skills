@@ -7,7 +7,7 @@ Two Claude skills for producing faceless YouTube videos end to end: script, imag
 | `why-explainer-video` | "Why Evolution Made…" science explainer: a human paradox opened by a second-person scene, resolved by named studies, reframed as a trade-off | 20 min, 3,300–3,600 words | Apefully |
 | `survival-story-video` | Second-person survival story, day by day, with real technical facts and an open ending | 10–12 min, 1,500–1,700 words | "Bunker Survival 1 Year" |
 
-Both skills share the same production method: one static image per moment (no animation), a recurring hand-drawn character, numbers and charts rendered by code, images generated in Google Flow through a Playwright-driven Chrome, assembly with ffmpeg on the voice timing.
+Both skills start with a two-round brief that asks the user for the character style, the scenario (three angles proposed by a Story architect agent) and the main parameters, then share the same production method: one static image per moment (no animation), a recurring character in the chosen style, numbers and charts rendered by code, images generated in Google Flow through a Playwright-driven Chrome, assembly with ffmpeg on the voice timing.
 
 The skills are written in French (the instructions Claude reads); the videos they produce are in English.
 
@@ -31,14 +31,17 @@ cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
 ├── references/
 │   ├── script-template.md       # mechanics of each section, word budgets
 │   ├── flow-automation.md       # automatic image generation in Google Flow, house style prefix, no-bubble rules
-│   ├── agents.md                # briefs of the six production agents
+│   ├── brief.md                 # questions asked BEFORE writing: character style, scenario, parameters -> brief.json
+│   ├── character-styles.md      # catalogue of character styles (stickman meme, egg + headphones, painted human, caveman duo, thin line)
+│   ├── agents.md                # briefs of the eight production agents
 │   ├── scene-catalogue.md       # what the reference channel shows: shares, patterns, rhythm rules
 │   ├── publication(-seo).md     # title, thumbnail, chapters, description, tags, category, Studio settings
 │   └── …                        # fact bank, beat sheet, visual pipeline, topic bank
 └── scripts/
     ├── cards.py                 # number cards with icons, five layouts
     ├── charts.py                # 24 chart / gauge / timeline / schema patterns measured on the reference channel
-    ├── prompts.py               # shot list -> Flow prompts + rhythm lint
+    ├── styles.json              # character styles: prefix, character sheet, costume slot, backgrounds, thumbnail template, QC sentence
+    ├── prompts.py               # shot list + brief.json -> Flow prompts + rhythm lint
     ├── build_slideshow.py       # shot list + voice timing -> mp4
     └── flow/
     ├── browser.mjs              # opens a real Chrome on Google Flow with a persistent profile (CDP :9222)
@@ -47,6 +50,12 @@ cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
     ├── cdp.mjs                  # shared Playwright attach helper
     └── convert.py               # JPEG → PNG for the build scripts
 ```
+
+## Pre-production brief and character styles
+
+Nothing is written before the user has answered two rounds of questions (`references/brief.md`): round 1 asks the subject (if missing), the **character style**, the voice language and the deliverable; round 2 shows three scenario angles written by the `story-architect` agent and asks which one to produce. The answers go to `brief.json` in the working folder, and every downstream step reads it.
+
+The character styles live in `scripts/styles.json` (`python scripts/<skill>/prompts.py --styles` lists them): `stickman-meme` (big white round head, rage-comic face, thick outlines, saturated painted sets: the style of the Galon Zéro thumbnails, default), `egg-headphones` (the original cream storybook character), `storybook-human` (painted human protagonist, 1990s animation film look), `caveman-duo`, `thin-line`, or a custom sheet written by the `character-designer` agent. Each style carries its prefix, character sheet with a `{costume}` slot (the costume changes with rank, season or state), backgrounds, dark variant, thumbnail template and the sentence the Image QC agent checks against. `prompts.py` assembles every Flow prompt from the chosen style, so no character description is hard-coded any more.
 
 ## Automatic image generation (Google Flow)
 
@@ -68,15 +77,17 @@ python skills/why-explainer-video/scripts/flow/convert.py flow/my-video
 
 ## Production agents
 
-`agents/` holds Claude Code agent definitions (copy them to `.claude/agents/` in your project): `fact-checker`, `visual-director` (shot-list variety audit), `image-qc` (vision check of the contact sheet: speech bubbles, text, wrong character). The full briefs, including Script critic, Prompt auditor and Publication checker, are in each skill's `references/agents.md`, so they work with the plain Agent tool too.
+`agents/` holds Claude Code agent definitions (copy them to `.claude/agents/` in your project): `story-architect` (three scenario angles for the user to choose from), `character-designer` (prompt sheet of a custom character), `fact-checker`, `visual-director` (shot-list variety audit), `image-qc` (vision check of the contact sheet against the character sheet of the brief: speech bubbles, text, wrong character). The full briefs, including Script critic, Prompt auditor and Publication checker, are in each skill's `references/agents.md`, so they work with the plain Agent tool too.
 
 ## Reference channel catalogue
 
 `examples/apefully/` holds the measurements made on 30 videos of the reference channel (8,250 shots cut and classified by vision agents): `stats.md` (family shares, per-video table, transitions), one example sheet per family (`scene.jpg`, `schema.jpg`, `timeline.jpg`, `gauge.jpg`…), `patterns-all.md` (the reusable visual patterns noted video by video), and the two scripts that produced them (`ape_shots.py`, `ape_catalogue.py`). The rules derived from it are in each skill's `references/scene-catalogue.md`.
 
+`examples/galonzero/` holds the analysis of the French channel Galon Zéro ("Ta vie à chaque grade": 18 videos, 1.6 M views in five weeks): video table, title and description template, the ten-rank structure, and the two-style visual system (stickman-meme split thumbnails, painted human interior), with sample thumbnails and storyboard sheets.
+
 ## One shot list, three tools
 
-`shots.json` (format in the header of `scripts/prompts.py`) drives everything: `prompts.py` builds the Google Flow prompts and lints the list against the channel's rhythm rules (no 4 scenes in a row, a data visual at least every 14 shots, no bubble-triggering words, no bare number cards); `build_slideshow.py` assembles the video on the voice timing, rendering cards, charts and titles by code and loading the Flow images by name.
+`shots.json` (format in the header of `scripts/prompts.py`) drives everything: `prompts.py` reads `brief.json` for the style and builds the Google Flow prompts and lints the list against the channel's rhythm rules (no 4 scenes in a row, a data visual at least every 14 shots, no bubble-triggering words, no bare number cards); `build_slideshow.py` assembles the video on the voice timing, rendering cards, charts and titles by code and loading the Flow images by name.
 
 ## Voice and assembly
 

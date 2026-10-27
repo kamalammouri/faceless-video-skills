@@ -26,19 +26,19 @@ FICTION À LA 2ᵉ PERSONNE ("you"), JOUR PAR JOUR
 Pourquoi ça marche : le spectateur **est** le personnage ; les chiffres donnent de la valeur et de la crédibilité ; les crises donnent une tension concrète ; le mystère retient jusqu'au bout ; le twist pousse au commentaire et appelle une suite.
 
 ## Workflow
-1. **Cadrer** : si le thème est absent, poser UNE question courte (lieu ou thème). Sinon choisir soi-même les paramètres (section 1) et les annoncer en une ligne.
+1. **Brief** (obligatoire, `references/brief.md`) : avant d'écrire quoi que ce soit, poser en une seule salve les questions du tour 1 (sujet s'il manque, **style de personnage**, langue de la voix, livrable), lancer l'agent **Story architect**, faire choisir un des 3 scénarios (tour 2), écrire `brief.json` et le relire en 3 lignes. Ne jamais sauter le brief, même si le sujet est donné : le style du personnage et le scénario sont toujours validés par l'utilisateur. Les paramètres de la section 1 se remplissent à partir du scénario choisi.
 2. **Choisir les faits** : ouvrir `references/fact-bank.md` pour le décor choisi. Chercher sur le web tout chiffre absent ou douteux. Ne jamais inventer un chiffre présenté comme réel.
 3. **Caler le rythme** : lire `references/reference-beat-sheet.md` (la feuille de rythme de la vidéo cible, minute par minute) et le tableau de la section 2. C'est la jauge : même densité de chiffres, mêmes jours-repères, même alternance scène/fait.
 4. **Écrire le script** avec `references/script-template.md` (mécanique de phrase par scène) et les règles de la section 3.
 5. **Construire le plan visuel** si l'utilisateur veut produire la vidéo : `references/style-et-production.md` (§8.9 pour le mode diaporama, qui est le mode par défaut de la chaîne).
-6. **Générer les images** : un plan par moment (60 à 70 images pour 11 min) par Google Flow en automatique avec `references/flow-automation.md` (scripts dans `scripts/flow/`) ; cartes de chiffres et jours par code. Shot list en `shots.json` (format en tête de `scripts/prompts.py`), règles de rythme de `references/scene-catalogue.md` ; cartes par `scripts/cards.py`, graphiques et frises par `scripts/charts.py` ; `python scripts/prompts.py shots.json` produit les prompts Flow et lint la liste ; audit par Visual director et Prompt auditor avant génération, planche contact par Image QC après ; montage par `python scripts/build_slideshow.py shots.json voice.wav timing.json out.mp4 --flow flow/<video>`.
+6. **Générer les images** : un plan par moment (60 à 70 images pour 11 min) par Google Flow en automatique avec `references/flow-automation.md` (scripts dans `scripts/flow/`) ; cartes de chiffres et jours par code. Shot list en `shots.json` (format en tête de `scripts/prompts.py`), règles de rythme de `references/scene-catalogue.md` ; cartes par `scripts/cards.py`, graphiques et frises par `scripts/charts.py` ; `python scripts/prompts.py shots.json` lit `brief.json` (style, fiche, costume, décor), produit les prompts Flow et lint la liste ; audit par Visual director et Prompt auditor avant génération, planche contact par Image QC après ; montage par `python scripts/build_slideshow.py shots.json voice.wav timing.json out.mp4 --flow flow/<video>`.
 7. **Livrer** : script complet + shot list + la fiche de publication complète de `references/publication.md` (titre, description avec chapitres calés sur la voix, tags ≤ 500 caractères, **catégorie Éducation** toujours écrite, miniature texte par code). Passer la checklist de la section 4 avant de livrer.
 
 Par défaut, livrer **script + plan de production** ; si l'utilisateur ne veut que le texte, livrer le script seul.
 
 
 ## Agents de production
-Le rédacteur seul se répète ; la production passe par des agents spécialisés lancés en parallèle avec l'outil Agent, chacun avec un brief complet (`references/agents.md`) : **Fact-checker** et **Script critic** après le brouillon ; **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot d'images ; **Publication checker** avant livraison. L'orchestrateur applique leurs tableaux de corrections et relance ce qui doit l'être. Ne jamais sauter Visual director et Image QC : ce sont eux qui empêchent les cartes nues, les bulles vides et les doublons.
+Le rédacteur seul se répète ; la production passe par des agents spécialisés lancés en parallèle avec l'outil Agent, chacun avec un brief complet (`references/agents.md`) : **Story architect** (3 angles au brief) et **Character designer** (fiche d'un style custom) avant le brouillon ; **Fact-checker** et **Script critic** après le brouillon ; **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot d'images ; **Publication checker** avant livraison. L'orchestrateur applique leurs tableaux de corrections et relance ce qui doit l'être. Ne jamais sauter Visual director et Image QC : ce sont eux qui empêchent les cartes nues, les bulles vides et les doublons.
 
 ## 1. Paramètres à choisir avant d'écrire
 
@@ -116,6 +116,7 @@ Un seul type :
 Dernière phrase : **une seule phrase courte, concrète, sans explication.** Elle doit laisser la porte ouverte à un épisode 2.
 
 ## 4. Contrôle qualité avant livraison
+- [ ] `brief.json` validé par l'utilisateur (style de personnage, scénario choisi parmi 3, langue, livrable) ; fiche du personnage du style choisi dans chaque prompt et dans le brief Image QC
 - [ ] Lieu fermé, dépendant de systèmes ; événement daté à l'heure près
 - [ ] Hook en 6 temps en 70 mots max
 - [ ] 2ᵉ personne et présent du début à la fin
