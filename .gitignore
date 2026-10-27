@@ -8,7 +8,8 @@ profile/
 *.mp4
 *.wav
 *.mp3
-flow/
+/flow/
+work/
 build*/
 node_modules/
 __pycache__/
