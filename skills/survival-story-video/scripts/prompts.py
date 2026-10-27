@@ -1,6 +1,7 @@
 """Build Google Flow prompts from a shot list, and lint the shot list for the channel's rhythm rules.
 
-  python prompts.py shots.json [--brief brief.json] [--style ID] [--setting "..."] [--flow-per-min 5] [--strict]
+  python prompts.py shots.json [--brief brief.json] [--style ID] [--setting "..."] [--flow-per-min 5] [--ref] [--strict]
+      --ref: every prompt with the character also says "the same character as in the reference image": run batch.mjs with REF="<caption>"
       -> prompts.json (for scripts/flow/batch.mjs) + lint report on stdout ; --strict exits 1 on a lint error
   python prompts.py --styles        -> lists the character styles of styles.json
 
@@ -138,6 +139,8 @@ def lint(shots, data_every=14, per_min=FLOW_PER_MIN):
     if cards_without: errs.append(f"cards without an icon: {cards_without} (use cards.card with an icon)")
     return errs, warns
 
+REF = False   # set by --ref: the batch attaches the character image as an ingredient, the prompt points to it
+
 def build(shots, st):
     out, comps, seen = [], itertools.cycle(["wide", "medium", "close", "cutaway", "overhead", "pov"]), set()
     for s in shots:
@@ -152,8 +155,9 @@ def build(shots, st):
                                            scene_bg=st["dark_scene_bg"] if dark else (st.get("scene_bg_nochar", st["scene_bg"]) if s.get("nochar") else st["scene_bg"]),
                                            insert_bg=st["dark_insert_bg"] if dark else st["insert_bg"])
         with_char = (fam == "scene" and not s.get("nochar")) or (fam == "metaphor" and s.get("withchar"))
+        ref = "The same character as in the reference image, exactly the same design, same head, same clothes." if (with_char and REF) else ""
         prefix = st["prefix"] if fam == "scene" else st.get("insert_prefix", st["prefix"])
-        parts = [prefix, character_sentence(st, s.get("costume")) if with_char else "", st["setting"] if fam == "scene" else "", body,
+        parts = [prefix, character_sentence(st, s.get("costume")) if with_char else "", ref, st["setting"] if fam == "scene" else "", body,
                  st["dark"] if dark else "", st["suffix"]]
         out.append({"file": s.get("file") or f"F{s['i']:03d}", "i": s["i"], "family": fam, "prompt": re.sub(r"\s+", " ", " ".join(p for p in parts if p)).strip()})
     return out
@@ -168,6 +172,7 @@ if __name__ == "__main__":
     shots = json.load(open(src, encoding="utf-8"))
     st = resolve_style(args)
     per_min = float(arg_value(args, "--flow-per-min") or FLOW_PER_MIN)
+    globals()["REF"] = "--ref" in args
     errs, warns = lint(shots, per_min=per_min)
     for e in errs: print("ERROR ", e)
     for w in warns: print("warn  ", w)

@@ -3,6 +3,10 @@
 // prompts.json = [{"file": "F001", "prompt": "..."}, ...]. A file already present in the output folder is skipped.
 // Env: PACE (ms pause after each image, 45000 keeps under Flow's "unusual activity" detector; 12000 got blocked after ~30 images),
 //      WAIT (ms max per image, 150000), MAXFAIL (consecutive failure cards before the run stops, 3; 99 = keep retrying all evening). Output: <out>/<file>.jpg (or .png/.webp).
+//      REF ("caption of a library image", e.g. "Character waving at blank wall"): attached as an INGREDIENT before every prompt, so the
+//      generator sees the character instead of only reading its description. Flow consumes the ingredient at each generation, hence the
+//      re-attach. The prompt must say "the same character as in the reference image, exactly the same design" (prompts.py --ref adds it).
+//      Pick as reference a clean full-body image of the character on a plain background, generated once and kept in the project.
 // Flow UI (flow.google.com, October 2026): prompt bar at the bottom with the textbox "Que voulez-vous créer ?", the "Agent"
 // toggle OFF (direct mode), the settings trigger set to Image · 16:9 · x1. Results are `group`s in a virtual-scrolled list, NEWEST
 // FIRST: a fresh tile carries the full prompt as its accessible name, then Flow replaces it with a short caption (so never rely on
@@ -20,12 +24,24 @@ const prompts = JSON.parse(fs.readFileSync(src, 'utf8'));
 fs.mkdirSync(out, { recursive: true });
 const done = new Set(fs.readdirSync(out).filter(f => !/\.test\./.test(f)).map(f => f.replace(/\.(jpg|jpeg|png|webp)$/i, '')));
 const todo = prompts.filter(p => !done.has(p.file));
-console.log(`${stamp()} ${prompts.length} prompts, ${todo.length} to generate, pace ${PACE} ms`);
+console.log(`${stamp()} ${prompts.length} prompts, ${todo.length} to generate, pace ${PACE} ms${REF ? `, reference "${REF}"` : ''}`);
 
 const { page } = await attach(); page.setDefaultTimeout(15_000);
 const box = () => page.getByRole('textbox', { name: /Que voulez-vous créer|What do you want to create/i }).first();
 const genButton = () => page.getByRole('button', { name: /Lancer la génération|^Generate$|Générer/i }).first();
 const groups = () => page.locator('main [role="group"]');
+const REF = process.env.REF || '';
+async function attachRef() {   // open the ingredient picker, search the reference by its caption, click it (it becomes a chip in the prompt bar)
+  if (!REF) return true;
+  if (await page.getByRole('button', { name: /^Ingrédient$|^Ingredient$/ }).count()) return true;   // already attached
+  await page.getByRole('button', { name: /Ajouter des ingrédients|Add ingredients/i }).first().click(); await sleep(900);
+  const search = page.getByRole('textbox', { name: /Rechercher des éléments|Search/i }).first();
+  if (await search.count()) { await search.fill(REF); await sleep(900); }
+  const opt = page.getByRole('option', { name: new RegExp(REF.slice(0, 24).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }).first();
+  if (!(await opt.count())) { await page.keyboard.press('Escape'); console.log(`${stamp()} reference "${REF}" not found in the library`); return false; }
+  await opt.click(); await sleep(700); await page.keyboard.press('Escape'); await sleep(400);
+  return (await page.getByRole('button', { name: /^Ingrédient$|^Ingredient$/ }).count()) > 0;
+}
 const failCount = () => groups().filter({ hasText: /Échec|Failed/ }).count();  // card text starts with the icon name "warning", so no anchor
 const bigImages = () => page.evaluate(() => [...document.querySelectorAll('main img')].filter(i => i.naturalWidth >= 512).map(i => i.src));
 const scrollTop = () => page.evaluate(() => { const c = document.querySelector('.cdk-virtual-scrollable'); if (c) c.scrollTop = 0; });
@@ -62,7 +78,8 @@ for (const [k, p] of todo.entries()) {
   try {
     await scrollTop();
     const before = new Set(await bigImages()); const fails0 = await failCount();
-    const b = box(); await b.click(); await b.fill(p.prompt); await sleep(300);
+    if (!(await attachRef())) { console.log(`${stamp()} ${p.file} SKIP: reference ingredient could not be attached`); skipped++; await sleep(PACE); continue; }
+    const b = box(); await b.click(); await page.keyboard.press('End'); await page.keyboard.insertText(p.prompt); await sleep(300);
     const g = genButton();
     if (await g.isDisabled().catch(() => true)) { console.log(`${stamp()} ${p.file} SKIP: generate button disabled (no credits or empty prompt)`); skipped++; await sleep(PACE); continue; }
     await g.click();
