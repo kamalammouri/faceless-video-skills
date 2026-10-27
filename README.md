@@ -36,6 +36,7 @@ cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
 │   └── …                        # fact bank, beat sheet, visual pipeline, topic bank
 └── scripts/
     ├── cards.py                 # number cards with icons, five layouts
+    ├── charts.py                # 16 chart / gauge / timeline patterns measured on the reference channel
     └── flow/
     ├── browser.mjs              # opens a real Chrome on Google Flow with a persistent profile (CDP :9222)
     ├── login.mjs                # waits for YOU to sign in (never types credentials)
@@ -60,7 +61,7 @@ python skills/why-explainer-video/scripts/flow/convert.py flow/my-video
 
 ## Number cards with icons (no bare numbers)
 
-`skills/*/scripts/cards.py` renders every number of the script as a card with a hand-drawn icon (clock, calendar, fuel, thermometer, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart) in one of five layouts (left, top, stamp, compare, gauge). `python cards.py` writes a demo sheet.
+`skills/*/scripts/cards.py` renders every number of the script as a card with a hand-drawn icon (clock, calendar, fuel, thermometer, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart) in one of five layouts (left, top, stamp, compare, gauge). `python cards.py` writes a demo sheet. `scripts/*/charts.py` adds the 16 data-visual patterns measured on the reference channel (ratio bars, bars with reference line, detached-slice pie, lines, dot grid, scatter, single and double thermometers, cursor gauge, dial, timelines, day-night curve, split comparison, pills); `python charts.py` writes its own demo sheet.
 
 ## Production agents
 
