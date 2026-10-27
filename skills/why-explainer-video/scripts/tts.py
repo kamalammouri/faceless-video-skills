@@ -6,7 +6,7 @@
 Engine, voice, style, rate and language come from brief.json ("voice": {"engine", "name", "style", "rate", "model"}, "voice_language"),
 each overridable by a flag. The engine is chosen by the user at the pre-production brief (references/brief.md); nothing is assumed.
 
-Each shot's "sentence" is synthesised to <cache>/<engine>/<file>.wav, next to a .txt with the text that produced it: a clip whose text
+Each shot's "sentence" is synthesised to <cache>/<engine>/S<i>.wav, next to a .txt with the text that produced it: a clip whose text
 has not changed is skipped (the run is resumable; delete a clip or change its sentence to redo it). The clips are then concatenated
 with --gap seconds of silence into voice.wav, and timing.json receives the list of start times, one per shot, in shot order (the
 second format build_slideshow.py accepts). A shot without a sentence takes the start time of the next clip.
@@ -16,6 +16,9 @@ gemini : pip install "google-genai>=2.25" ; GEMINI_API_KEY in the environment or
          is sent with every call so the clips match ; --pace ms between calls keeps under the quota ; 429 and 5xx are retried.
 edge   : pip install edge-tts ; free, no key ; mp3 converted to 24 kHz mono WAV with the ffmpeg of imageio_ffmpeg (already needed
          by build_slideshow.py) ; --rate like "-5%" ; no style control, the voice name carries the tone.
+Several voices: brief.json "voices": {"NARRATOR": "en-US-GuyNeural", "MOM": "en-US-JennyNeural", ...} and, on a shot, "speaker": "MOM".
+         A shot without "speaker" uses the main voice; a speaker missing from the table falls back to it too (and is listed at the end).
+         Gemini: the table gives the voice name; the style sentence stays the brief's one, so put the tone in the sentence itself.
 Always test on three shots first: --only 1,2,3 , listen, then run the full list.
 """
 import json, sys, os, time, wave, pathlib, subprocess, base64, io, shutil
@@ -118,22 +121,27 @@ def main(args):
     if engine == "gemini" and not os.environ.get("GEMINI_API_KEY"): sys.exit("GEMINI_API_KEY missing: put it in the environment or in a local .env")
     print(f"engine {engine} | voice {cfg['voice']} | {'model ' + cfg['model'] + ' | style ' + repr(cfg['style']) if engine == 'gemini' else 'rate ' + cfg['rate']} | lang {lang}")
 
+    voices = brief.get("voices") or {}; unknown = set()
     made = skipped = failed = 0
     for s in shots:
         text = (s.get("sentence") or "").strip()
         if not text or (only and s["i"] not in only): continue
-        name = s.get("file") or f"F{s['i']:03d}"; dst, txt = cache / f"{name}.wav", cache / f"{name}.txt"
-        if dst.exists() and txt.exists() and txt.read_text(encoding="utf-8") == text: skipped += 1; continue
-        print(f"#{s['i']:>3} {name}: {text[:70]}")
-        if synth(engine, text, cfg, dst): txt.write_text(text, encoding="utf-8"); made += 1; time.sleep(pace / 1000)
+        spk = s.get("speaker"); vcfg = dict(cfg)
+        if spk and spk in voices: vcfg["voice"] = voices[spk]
+        elif spk: unknown.add(spk)
+        name = f"S{s['i']:04d}"; dst, txt = cache / f"{name}.wav", cache / f"{name}.txt"   # by shot, not by image: one image may carry several sentences
+        key = f"{vcfg['voice']}|{text}"
+        if dst.exists() and txt.exists() and txt.read_text(encoding="utf-8") == key: skipped += 1; continue
+        print(f"#{s['i']:>3} {name} [{spk or 'narrator'} / {vcfg['voice']}]: {text[:60]}")
+        if synth(engine, text, vcfg, dst): txt.write_text(key, encoding="utf-8"); made += 1; time.sleep(pace / 1000)
         else: failed += 1
-    print(f"clips: {made} made, {skipped} unchanged, {failed} failed")
+    print(f"clips: {made} made, {skipped} unchanged, {failed} failed" + (f" | speakers without a voice in brief.voices (main voice used): {sorted(unknown)}" if unknown else ""))
 
     # concatenate in shot order, exact start times
     silence = b"\x00\x00" * int(gap * SR); frames, starts, missing, t = [], [], [], 0.0
     for s in shots:
         starts.append(round(t, 3))
-        name = s.get("file") or f"F{s['i']:03d}"; clip = cache / f"{name}.wav"
+        name = f"S{s['i']:04d}"; clip = cache / f"{name}.wav"
         if not (s.get("sentence") or "").strip(): continue
         if not clip.exists(): missing.append(s["i"]); continue
         fr = read_frames(clip); frames.append(fr); frames.append(silence); t += (len(fr) // 2 + len(silence) // 2) / SR

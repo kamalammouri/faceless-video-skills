@@ -52,3 +52,7 @@ Le skill laisse les deux choix ouverts : le brief demande le style de **l'intér
 
 ### custom
 - L'utilisateur décrit le personnage en une phrase ; l'agent **Character designer** (`references/agents.md`) rend : la fiche de prompt en anglais (≤ 60 mots, une seule phrase, terminée par « Keep this exact character design in every image. »), le préfixe de dessin choisi parmi les styles existants, 3 costumes par étape si le récit en a, 4 expressions, un accessoire signature, la phrase QC, le gabarit de miniature, et 3 prompts de test. La fiche validée va dans `brief.json` → `character.sheet`, et `style` prend l'id du préfixe choisi.
+
+## stickman-dark : silhouette noire, yeux blancs, sweat à capuche (style Ifverse Tales)
+
+Le style de la chaîne de référence du skill `what-if-story-video` : stick figure en silhouette noire pleine, grande tête ronde noire, deux yeux blancs ovales avec un reflet en étoile, sweat à capuche de couleur (héros rouge, rival bleu, figurants gris, vert, jaune), décors peints au crépuscule violet-orange, nuit bleu marine avec une lumière chaude. Les émotions passent par les yeux. Convient aux fictions « What If », aux histoires de pouvoir, aux séries avec plusieurs personnages récurrents. Miniature : visage en gros plan à droite, un accessoire, moitié gauche vide pour le texte.

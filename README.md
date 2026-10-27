@@ -1,13 +1,14 @@
 # Faceless Video Skills
 
-Two Claude skills for producing faceless YouTube videos end to end: script, image list, automatic image generation in Google Flow, slideshow assembly on an AI voice, thumbnail and a complete publication sheet.
+Three Claude skills for producing faceless YouTube videos end to end: script, image list, automatic image generation in Google Flow, slideshow assembly on an AI voice, thumbnail and a complete publication sheet.
 
 | Skill | Format | Length | Reference channel |
 |---|---|---|---|
 | `why-explainer-video` | "Why Evolution Made…" science explainer: a human paradox opened by a second-person scene, resolved by named studies, reframed as a trade-off | 20 min, 3,300–3,600 words | Apefully |
 | `survival-story-video` | Second-person survival story, day by day, with real technical facts and an open ending | 10–12 min, 1,500–1,700 words | "Bunker Survival 1 Year" |
+| `what-if-story-video` | "What If You…" second-person fiction: a power with a number, its physical limit, a plus/minus escalation, a moral dilemma (save rather than win), a cliffhanger; 3-part series plus a full movie; slow narrator plus character voices | 6–9 min, 650–1,000 words, 100 wpm | Ifverse Tales |
 
-Both skills start with a two-round brief that asks the user for the character style, the scenario (three angles proposed by a Story architect agent) and the main parameters, then share the same production method: one static image per moment (no animation), a recurring character in the chosen style, numbers and charts rendered by code, images generated in Google Flow through a Playwright-driven Chrome, assembly with ffmpeg on the voice timing.
+All three skills start with a two-round brief that asks the user for the character style, the scenario (three angles proposed by a Story architect agent) and the main parameters, then share the same production method: one static image per moment (no animation), a recurring character in the chosen style, numbers and charts rendered by code, images generated in Google Flow through a Playwright-driven Chrome, assembly with ffmpeg on the voice timing.
 
 The skills are written in French (the instructions Claude reads); the videos they produce are in English.
 
@@ -19,6 +20,7 @@ The skills are written in French (the instructions Claude reads); the videos the
 git clone https://github.com/kamalammouri/faceless-video-skills
 cp -r faceless-video-skills/skills/why-explainer-video ~/.claude/skills/
 cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
+cp -r faceless-video-skills/skills/what-if-story-video ~/.claude/skills/
 ```
 
 **claude.ai / Claude desktop**: zip a skill folder (the folder itself as the root of the archive) and upload it in Settings → Skills.
@@ -81,6 +83,16 @@ claude mcp add --scope user chrome-devtools -- npx -y chrome-devtools-mcp@latest
 ```
 
 It loads at the next session start and needs `browser.mjs` running (port 9222). Measured: about 25 s per image, 65 images in 27 minutes. Requirements: Node 18+, Chrome, a Google account with Flow (AI Pro or Ultra credits), Python 3 with Pillow.
+
+## What If stories (Ifverse format)
+
+`what-if-story-video` was built from a measured study of the Ifverse Tales channel (12 videos, 8.5 M views in three weeks; study in `skills/what-if-story-video/references/reference-ifverse.md`): 85–125 words per minute, 6–8 "you" per 100 words, a shot every 3–4 s with two shots in three moving, dialogue lines voiced by several characters, 3-part series with cliffhangers. What it adds to the shared pipeline:
+
+- `scripts/tts.py`: one voice per speaker (`brief.json` `"voices": {"MOM": "en-US-JennyNeural", ...}` and `"speaker"` on a shot), clips cached per shot.
+- `scripts/build_slideshow.py --motion`: a slow zoom on two Flow images out of three (in, then out), cards and charts still, every shot a clip, concatenated without re-encoding.
+- `scripts/cards.py`: `scoreboard("21", "0", "YOU", "THEM")` and `phone("MOM", ["3 missed calls"])`, used from `shots.json` with `{"card": {"fn": "scoreboard", "args": [...]}}`.
+- `scripts/styles.json`: the `stickman-dark` style (black silhouette, white eyes with a star glint, coloured hoodie, dusk sets) with its thumbnail template; `scripts/thumb.py` adds the two yellow words and the red "PART n" badge.
+- `references/`: the 8-beat story template with word budgets, a premise bank (power, limit, dilemma), the visual style, the publication sheet (title, thumbnail, description with science notes and part links), adapted Story architect and Script critic briefs.
 
 ## Number cards with icons (no bare numbers)
 

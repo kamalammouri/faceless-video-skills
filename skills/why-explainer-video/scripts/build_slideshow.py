@@ -1,6 +1,9 @@
 """Assemble the slideshow video: one image per shot, held until the next shot's sentence starts, on the voice track.
 
-  python build_slideshow.py shots.json voice.wav timing.json out.mp4 [--flow flow/my-video] [--caption]
+  python build_slideshow.py shots.json voice.wav timing.json out.mp4 [--flow flow/my-video] [--caption] [--motion]
+  --motion: slow zoom (in, then out, alternating) on two Flow images out of three; cards, charts and titles stay still. Measured on an
+            animated reference channel (Ifverse): 2 shots in 3 move. Every shot becomes a clip, so the build takes a few minutes longer.
+  card with "fn": {"family": "card", "card": {"fn": "scoreboard", "args": ["21", "0", "YOU", "THEM"]}} or {"fn": "phone", "args": ["MOM", ["3 missed calls"]]}
 
 shots.json  = the same list as for prompts.py, one entry per shot, in order:
   {"i": 1, "sentence": "...", "family": "scene", "file": "F001"}                       -> flow/<dir>/F001.png (or .jpg)
@@ -70,10 +73,13 @@ def overlay(im, sentence, day, caption):
 
 def render(s, flow_dir):
     fam = s["family"]
-    if fam == "card": c = dict(s["card"]); return cards.card(c.pop("icon"), c.pop("big"), c.pop("small", ""), dark=s.get("dark", False), **c)
+    if fam == "card":
+        c = dict(s["card"])
+        if "fn" in c: return getattr(cards, c["fn"])(*c.get("args", []), **c.get("kwargs", {}))   # scoreboard, phone
+        return cards.card(c.pop("icon"), c.pop("big"), c.pop("small", ""), dark=s.get("dark", False), **c)
     if fam == "chart": c = s["chart"]; return getattr(charts, c["fn"])(*c.get("args", []), **c.get("kwargs", {}))
     if fam == "title": return title_card(s["title"], s.get("dark", False))
-    for ext in (".png", ".jpg"):
+    for ext in (".png", ".jpg", ".webp"):
         f = flow_dir / f"{s.get('file') or f'F{s['i']:03d}'}{ext}"
         if f.exists(): return Image.open(f).convert("RGB").resize((W, H))
     return None
@@ -82,23 +88,34 @@ def main():
     a = [x for x in sys.argv[1:] if not x.startswith("--")]
     shots_f, voice, timing_f, out = a[0], a[1], a[2], a[3] if len(a) > 3 else "slideshow.mp4"
     flow_dir = pathlib.Path(sys.argv[sys.argv.index("--flow") + 1]) if "--flow" in sys.argv else pathlib.Path("flow")
-    caption = "--caption" in sys.argv
+    caption, motion = "--caption" in sys.argv, "--motion" in sys.argv
     shots = json.load(open(shots_f, encoding="utf-8")); timing = json.load(open(timing_f, encoding="utf-8"))
     starts = starts_from_timing(shots, timing)
     FF = imageio_ffmpeg.get_ffmpeg_exe()
     hh, mm, ss = subprocess.run([FF, "-i", voice], capture_output=True, text=True).stderr.split("Duration: ")[1].split(",")[0].split(":")
     dur = 3600 * int(hh) + 60 * int(mm) + float(ss)
     ends = starts[1:] + [dur]
-    fr = pathlib.Path("build_slideshow/frames"); fr.mkdir(parents=True, exist_ok=True); missing, lines = [], []
+    fr = pathlib.Path("build_slideshow/frames"); fr.mkdir(parents=True, exist_ok=True); missing, lines, moving = [], [], 0
+    enc = ["-c:v", "libx264", "-preset", "fast", "-crf", "20"]
     for k, s in enumerate(shots):
-        im = render(s, flow_dir)
-        if im is None: missing.append(s.get("file") or s["i"]); im = fallback(s["sentence"])
+        im = render(s, flow_dir); is_flow = s["family"] not in ("card", "chart", "title")
+        if im is None: missing.append(s.get("file") or s["i"]); im = fallback(s["sentence"]); is_flow = False
         else: im = overlay(im, s["sentence"], s.get("day"), caption)
-        p = fr / f"f{k:04d}.png"; im.save(p, compress_level=1)
-        lines.append(f"file '{p.resolve().as_posix()}'\nduration {max(ends[k] - starts[k], 0.4):.3f}\n")
-    lst = pathlib.Path("build_slideshow/frames.txt"); lst.write_text("".join(lines) + f"file '{(fr / f'f{len(shots) - 1:04d}.png').resolve().as_posix()}'\n")
-    subprocess.run([FF, "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst), "-i", voice, "-vf", "fps=30,format=yuv420p",
-                    "-c:v", "libx264", "-preset", "fast", "-crf", "20", "-c:a", "aac", "-b:a", "160k", "-shortest", out], check=True)
+        p = fr / f"f{k:04d}.png"; im.save(p, compress_level=1); d = max(ends[k] - starts[k], 0.4)
+        if not motion: lines.append(f"file '{p.resolve().as_posix()}'\nduration {d:.3f}\n"); continue
+        seg = fr / f"s{k:04d}.mp4"                       # --motion: every shot becomes a clip, concatenated without re-encoding
+        if is_flow and k % 3 != 2:                        # two Flow shots out of three get a slow zoom, in then out
+            n = int(round(d * 30)); z = f"1+0.07*on/{n}" if moving % 2 == 0 else f"1.07-0.07*on/{n}"; moving += 1
+            vf = f"scale=2400:1350,zoompan=z='{z}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={n}:s=1920x1080:fps=30,format=yuv420p"
+            subprocess.run([FF, "-y", "-loglevel", "error", "-loop", "1", "-i", str(p), "-vf", vf, "-frames:v", str(n), *enc, str(seg)], check=True)
+        else:
+            subprocess.run([FF, "-y", "-loglevel", "error", "-loop", "1", "-i", str(p), "-t", f"{d:.3f}", "-vf", "fps=30,format=yuv420p", *enc, str(seg)], check=True)
+        lines.append(f"file '{seg.resolve().as_posix()}'\n")
+    lst = pathlib.Path("build_slideshow/frames.txt")
+    lst.write_text("".join(lines) + ("" if motion else f"file '{(fr / f'f{len(shots) - 1:04d}.png').resolve().as_posix()}'\n"))
+    video = ["-c:v", "copy"] if motion else ["-vf", "fps=30,format=yuv420p", *enc]
+    subprocess.run([FF, "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst), "-i", voice, *video,
+                    "-c:a", "aac", "-b:a", "160k", "-shortest", out], check=True)
     print(f"done -> {out} | {len(shots)} shots | missing Flow images: {missing}")
 
 if __name__ == "__main__": main()

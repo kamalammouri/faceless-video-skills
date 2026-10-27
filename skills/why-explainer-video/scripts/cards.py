@@ -230,6 +230,32 @@ def card(icon, big, small="", layout="left", dark=False, icons=None, value=None,
         if small: d.text((960, 820), small, font=font(56), fill=sub, anchor="mm")
     return im
 
+def scoreboard(left, right, left_name="", right_name="", dark=True, accent=None):
+    """Two big numbers on a flip-board, 'VICTORY x30' style: scoreboard("21", "0", "YOU", "THEM")."""
+    bg, ink = (SLATE, CREAM) if dark else (CREAM, INK)
+    im = Image.new("RGB", (W, H), bg); d = ImageDraw.Draw(im); acc = accent or TERRA
+    for k, (num, name, cx) in enumerate(((left, left_name, 640), (right, right_name, 1280))):
+        d.rounded_rectangle([cx - 260, 300, cx + 260, 760], 36, fill=(28, 30, 34), outline=ink, width=6)
+        d.line([cx - 260, 530, cx + 260, 530], fill=bg, width=6)
+        d.text((cx, 530), num, font=_fit(d, num, 480, 300), fill=CREAM if k else acc, anchor="mm")
+        if name: d.text((cx, 860), name, font=font(60, True), fill=ink, anchor="mm")
+    d.text((960, 530), ":", font=font(200, True), fill=ink, anchor="mm")
+    return im
+
+def phone(title, lines=(), dark=True, accent=None):
+    """A phone screen with a short title and up to 4 lines: phone("MOM", ["3 missed calls"]), phone("MY BANK", ["$31,240.00", "SEND"])."""
+    bg, ink = (SLATE, CREAM) if dark else (CREAM, INK)
+    im = Image.new("RGB", (W, H), bg); d = ImageDraw.Draw(im); acc = accent or TERRA
+    x0, y0, x1, y1 = 700, 90, 1220, 990
+    d.rounded_rectangle([x0, y0, x1, y1], 70, fill=(28, 30, 34), outline=ink, width=8)
+    d.rounded_rectangle([x0 + 24, y0 + 24, x1 - 24, y1 - 24], 54, fill=WHITE if not dark else (236, 240, 244))
+    d.rounded_rectangle([880, y0 + 40, 1040, y0 + 70], 15, fill=(28, 30, 34))
+    d.text((960, 300), title, font=_fit(d, title, 420, 72), fill=INK, anchor="mm")
+    for k, t in enumerate(list(lines)[:4]):
+        d.rounded_rectangle([x0 + 70, 400 + k * 130, x1 - 70, 500 + k * 130], 24, fill=acc if k == len(lines) - 1 and len(lines) > 1 else (220, 224, 228))
+        d.text((960, 450 + k * 130), t, font=_fit(d, t, 360, 48), fill=WHITE if (k == len(lines) - 1 and len(lines) > 1) else INK, anchor="mm")
+    return im
+
 if __name__ == "__main__":
     demo = [("clock", "3:47", "a.m.", "left", {}), ("calendar", "240 DAYS", "nothing lands", "top", {}),
             ("fuel", "14,000 L", "arctic diesel", "left", {}), ("thermo", "-58 °C", "tonight", "top", {}),
@@ -239,8 +265,10 @@ if __name__ == "__main__":
             ("fire", "DAY 248", "the smoke", "top", {"dark": True}), ("plane", "DAY 365", "wheels down", "left", {}),
             ("battery", "4,100 L", "left in the tank", "gauge", {"value": 0.29, "icon": "battery"}), ("wind", "91 KNOTS", "and climbing", "top", {}),
             ("sun", "146 DAYS", "of darkness", "left", {"icon": "moon"}), ("heart", "2,200 KCAL", "a day", "left", {"icon": "food"})]
-    sheet = Image.new("RGB", (480 * 4, 270 * 4), "white")
+    sheet = Image.new("RGB", (480 * 4, 270 * 5), "white")
     for i, (ic, big, small, lay, kw) in enumerate(demo):
         kw = dict(kw); ic = kw.pop("icon", ic)
         im = card(ic, big, small, layout=lay, **kw).resize((480, 270)); sheet.paste(im, ((i % 4) * 480, (i // 4) * 270))
+    for i, im in enumerate((scoreboard("21", "0", "YOU", "THEM"), phone("MOM", ["3 missed calls"]), phone("MY BANK", ["$31,240.00", "SEND"]), scoreboard("9", "10", "SAVED", "SHOTS", dark=False))):
+        sheet.paste(im.resize((480, 270)), (i * 480, 4 * 270))
     out = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "cards_demo.jpg"); sheet.save(out, quality=85); print(out)
