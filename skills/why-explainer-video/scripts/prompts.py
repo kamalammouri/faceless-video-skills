@@ -1,6 +1,6 @@
 """Build Google Flow prompts from a shot list, and lint the shot list for the channel's rhythm rules.
 
-  python prompts.py shots.json [--brief brief.json] [--style ID] [--setting "..."] [--strict]
+  python prompts.py shots.json [--brief brief.json] [--style ID] [--setting "..."] [--flow-per-min 5] [--strict]
       -> prompts.json (for scripts/flow/batch.mjs) + lint report on stdout ; --strict exits 1 on a lint error
   python prompts.py --styles        -> lists the character styles of styles.json
 
@@ -21,6 +21,12 @@ shots.json = [ {"i": 1, "sentence": "...", "family": "scene", "scene": "the char
   withchar: true -> adds the character sheet to a metaphor (by default only scenes carry it)
   costume: "..." -> overrides the brief's costume for this shot only (rank or season changes)
   Flow prompts are built only for scene / icon / schema / metaphor / map.
+  file: two consecutive shots may share the same "file": one Flow image held over several sentences (built once).
+  start (optional, seconds): used for the Flow budget; without it a shot counts 4.5 s.
+
+Flow budget (the slow, rate-limited part of production): at most FLOW_PER_MIN Flow images per minute of video
+(default 5, i.e. one scene per moment of about 12 s), the other shots rendered by code (card / chart / title) or held.
+163 Flow images for 16 min took a whole evening; 80 take 40 minutes. --flow-per-min N changes the budget.
 """
 import json, re, sys, itertools, pathlib
 
@@ -69,8 +75,20 @@ def resolve_style(args=()):
 def character_sentence(st, costume=None):
     return re.sub(r"\s+", " ", st["character"].replace("{costume}", costume if costume is not None else st["costume"])).replace(" ,", ",").strip()
 
-def lint(shots, data_every=14):
+FLOW_PER_MIN = 5
+
+def flow_budget(shots, per_min=FLOW_PER_MIN):
+    """(flow images, minutes, budget): a Flow image is one distinct file among scene/icon/schema/metaphor/map shots."""
+    files = {s.get("file") or f"F{s['i']:03d}" for s in shots if s["family"] in FAMILY_TEMPLATE}
+    starts = [s["start"] for s in shots if isinstance(s.get("start"), (int, float))]
+    minutes = ((max(starts) + 5) if starts else len(shots) * 4.5) / 60
+    return len(files), minutes, int(per_min * minutes)
+
+def lint(shots, data_every=14, per_min=FLOW_PER_MIN):
     errs, warns = [], []
+    n, minutes, budget = flow_budget(shots, per_min)
+    if n > budget: errs.append(f"{n} Flow images for {minutes:.1f} min, budget {budget} ({per_min}/min): hold one scene over consecutive sentences (same \"file\"), or turn icons and schemas into code cards/charts")
+    elif n > budget * 0.8: warns.append(f"{n} Flow images for {minutes:.1f} min, close to the budget of {budget}")
     run = 0
     for k, s in enumerate(shots):
         fam = s["family"]
@@ -96,10 +114,13 @@ def lint(shots, data_every=14):
     return errs, warns
 
 def build(shots, st):
-    out, comps = [], itertools.cycle(["wide", "medium", "close", "cutaway", "overhead", "pov"])
+    out, comps, seen = [], itertools.cycle(["wide", "medium", "close", "cutaway", "overhead", "pov"]), set()
     for s in shots:
         fam = s["family"]
         if fam not in FAMILY_TEMPLATE: continue
+        f = s.get("file") or f"F{s['i']:03d}"
+        if f in seen: continue                      # the same image held over several sentences
+        seen.add(f)
         comp = s.get("composition") or (next(comps) if fam == "scene" else "")
         dark = bool(s.get("dark"))
         body = FAMILY_TEMPLATE[fam].format(comp=COMPOSITIONS.get(comp, "").format(pov_hands=st["pov_hands"]), scene=s["scene"].rstrip("."),
@@ -121,7 +142,8 @@ if __name__ == "__main__":
     src = next((a for a in args if not a.startswith("--") and (args.index(a) == 0 or args[args.index(a) - 1] not in ("--brief", "--style", "--setting"))), "shots.json")
     shots = json.load(open(src, encoding="utf-8"))
     st = resolve_style(args)
-    errs, warns = lint(shots)
+    per_min = float(arg_value(args, "--flow-per-min") or FLOW_PER_MIN)
+    errs, warns = lint(shots, per_min=per_min)
     for e in errs: print("ERROR ", e)
     for w in warns: print("warn  ", w)
     prompts = build(shots, st)

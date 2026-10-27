@@ -30,7 +30,7 @@ Google Flow n'a pas d'API. Ce qui marche, mesuré sur un lot de 65 images (27 mi
 - `scripts/flow/peek.mjs out.png` : capture d'écran et texte de la page Flow, pour diagnostiquer un blocage sans toucher à la fenêtre.
 - Sortie Flow : 1376 × 768 ; le montage redimensionne en 1920 × 1080 sans perte visible dans ce style.
 - Bouton de génération grisé = plus de crédits ou prompt vide : le script saute l'image et continue.
-- Une image par phrase (300 images pour 20 min) coûte 2 h de génération et autant de crédits : regrouper en **un plan par moment** (5 à 15 s, 60 à 70 images pour 11 min) et faire les chiffres, cartes et graphiques par code.
+- **Budget : 5 images Flow par minute de vidéo au maximum** (une scène par moment, tenue sur plusieurs phrases avec le même `file` ; `prompts.py` refuse au-delà). Les chiffres, cartes, graphiques et titres sont par code. Une image par phrase (163 pour 16 min) coûte une soirée ; 80 images prennent 40 minutes.
 - Les images avec personnage sont les seules que Flow fait mieux que le code ; icônes, schémas, frises et chiffres restent par code (exacts, cohérents, gratuits).
 
 

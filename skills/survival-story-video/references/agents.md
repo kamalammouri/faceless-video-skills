@@ -10,6 +10,8 @@ Un seul rédacteur qui écrit, dessine, vérifie et publie finit par se répéte
 | Au brief, tour 2, avant tout brouillon | **Story architect** | sujet, règles du format, `brief.json`, vidéos déjà publiées | 3 angles ; l'utilisateur en choisit un |
 | Après le brouillon du script | **Fact-checker** + **Script critic** | le script | liste de corrections, chacune avec la phrase visée |
 | Après la liste d'images | **Visual director** + **Prompt auditor** | shot list + préfixe de style | shot list corrigée, prompts réécrits |
+
+Contrainte de production à appliquer en premier : le **budget Flow** (5 images Flow par minute de vidéo au plus). Quand la liste dépasse, proposer les plans à tenir sur plusieurs phrases (même `file`) et les inserts à rendre par code plutôt que par Flow.
 | Après la génération des images | **Image QC** (vision) | planche contact + shot list | liste des images à régénérer avec le nouveau prompt |
 | Avant livraison | **Publication checker** | fiche de publication + voice.json | fiche corrigée ou « OK » |
 

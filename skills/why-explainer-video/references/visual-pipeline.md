@@ -54,6 +54,10 @@ Une carte « chiffre seul dans un cadre » lue trois fois de suite fait pauvre :
 
 Viser la part de la vidéo à 542 k vues (plus de schémas) plutôt que celle à 10 k (plus de scènes).
 
+### Budget d'images Flow (critère de production)
+
+Flow est le seul poste lent et limité (détecteur d'« activité inhabituelle », une image toutes les 45 à 50 s) : **au plus 5 images Flow par minute de vidéo**, soit une scène par *moment* d'une douzaine de secondes, tenue sur deux ou trois phrases en donnant le même `file` aux plans consécutifs. Tout ce qui porte un chiffre, un nom de concept, une comparaison ou un titre est rendu par code (`cards.py`, `charts.py`, carte-titre), ce qui est instantané et exact. `prompts.py` compte les images Flow distinctes et refuse la liste au-dessus du budget. Repère : une vidéo de 16 min = 80 images Flow au maximum, pas 163.
+
 ## 4. Préfixe de style (à placer devant chaque prompt d'image)
 
 Le préfixe et la fiche du personnage viennent du style choisi au brief (`scripts/styles.json`, catalogue `references/character-styles.md`) ; `prompts.py` les assemble dans chaque prompt. Le préfixe ci-dessous est le style `thin-line`, gardé pour mémoire.
