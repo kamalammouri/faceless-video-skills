@@ -37,7 +37,7 @@ Pourquoi ça marche : la fiction bat l'explication (même sujet « réflexes hum
 8. **Miniature et publication** : `references/publication.md` (titre « What If You… ? », visage du héros à droite + 2 ou 3 mots jaunes à gauche + badge « PART n », description au gabarit avec science notes, **catégorie écrite**), puis **Publication checker**.
 
 ## Agents de production
-Lancés en parallèle avec l'outil Agent, briefs dans `references/agents.md` : **Story architect** (3 dilemmes) et **Character designer** (style custom) avant le script ; **Fact-checker** et **Script critic** après le brouillon ; **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot ; **Publication checker** avant livraison. Ne jamais sauter Story architect (c'est le dilemme qui fait la vidéo), Visual director et Image QC.
+Lancés en parallèle avec l'outil Agent, briefs dans `references/agents.md` : **Story architect** (3 dilemmes) et **Character designer** (style custom) avant le script ; **Fact-checker** et **Script critic** après le brouillon ; **Render router** (plan par plan : code ou Flow ; un symbole seul, un chiffre, un score ou une frise ne vont jamais à Flow), puis **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot ; **Publication checker** avant livraison. Ne jamais sauter Story architect (c'est le dilemme qui fait la vidéo), Visual director et Image QC.
 
 ## 1. Choisir le pouvoir (test du rêve)
 

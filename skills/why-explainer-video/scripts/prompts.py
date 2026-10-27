@@ -24,6 +24,13 @@ shots.json = [ {"i": 1, "sentence": "...", "family": "scene", "scene": "the char
   file: two consecutive shots may share the same "file": one Flow image held over several sentences (built once).
   start (optional, seconds): used for the Flow budget; without it a shot counts 4.5 s.
 
+Render routing: an insert that is one simple symbol (check mark, gift box, arrow bent in a loop, question mark, padlock, coin...)
+is refused by the lint (CODE_ICONS): cards.symbol draws it by code. The Render router agent (references/agents.md) makes the same call
+for what the word list cannot catch. Flow is for scenes with the character and for objects with texture and light.
+
+Backgrounds: prompts.json ends with BG and BG_DARK (an empty page in the style's insert backgrounds); generated once, they are
+the canvas of every code insert (build_slideshow.py reads flow/<dir>/BG.* and BG_DARK.*). --no-bg skips them.
+
 Flow budget (the slow, rate-limited part of production): at most FLOW_PER_MIN Flow images per minute of video
 (default 5, i.e. one scene per moment of about 12 s), the other shots rendered by code (card / chart / title) or held.
 163 Flow images for 16 min took a whole evening; 80 take 40 minutes. --flow-per-min N changes the budget.
@@ -49,6 +56,21 @@ FAMILY_TEMPLATE = {
 BANNED = ["talking", "talks", "calling", "says", "saying", "speaks", "speaking", "conversation", "sign ", "signs", "label", "poster", "screen showing",
           "reads ", "written", "writing", "text", "clock showing", "gauge reading", "number", "digits", "letters", "caption", "subtitle"]
 DATA = {"card", "chart", "map"}; INSERT = {"icon", "schema", "metaphor", "map", "card", "chart", "title"}
+# Simple symbols Flow should never be asked for: cards.symbol(icon) draws them exactly, instantly, with no credits.
+CODE_ICONS = {"check mark": "check", "checkmark": "check", "tick": "check", "cross mark": "cross", "crossed out": "cross", "red cross": "cross",
+              "question mark": "question", "exclamation": "exclamation", "arrow bent": "arrow_loop", "looping arrow": "arrow_loop", "arrow in a loop": "arrow_loop",
+              "circular arrow": "arrow_loop", "gift box": "gift", "present box": "gift", "light bulb": "bulb", "lightbulb": "bulb", "padlock": "lock", " lock ": "lock",
+              "coin": "coin", "envelope": "envelope", "magnifying glass": "magnifier", "magnifier": "magnifier", "star shape": "star", "single star": "star",
+              "an eye": "eye", "open eye": "eye", "flag": "flag", "door": "door", "clock": "clock", "calendar": "calendar", "heart shape": "heart", "key": "key",
+              "thermometer": "thermo", "battery": "battery", "hourglass": "hourglass", "flame": "fire", "candle": "fire", "sun": "sun", "moon": "moon", "pill": "pills"}
+
+def code_candidate(s):
+    """A Flow insert that a code symbol replaces: short text, no character, one object among CODE_ICONS. Returns the icon name or None."""
+    if s["family"] not in ("icon", "metaphor", "schema") or s.get("withchar"): return None
+    low = " " + s.get("scene", "").lower() + " "
+    if len(low.split()) > 14 or " character" in low or " figure" in low or " hand" in low: return None
+    hits = [v for k, v in CODE_ICONS.items() if k in low]
+    return hits[0] if len(set(hits)) == 1 else None
 
 def tokens(s): return set(re.findall(r"[a-z]{4,}", s.lower()))
 
@@ -109,6 +131,8 @@ def lint(shots, data_every=14, per_min=FLOW_PER_MIN):
     for k, s in enumerate(shots):
         if s["family"] in DATA | {"chart"}: last = k
         elif k - last > data_every: warns.append(f"#{s['i']}: {k - last} shots since the last data visual (max {data_every})"); last = k
+    simple = [(s["i"], code_candidate(s)) for s in shots if code_candidate(s)]
+    for i, ic in simple: errs.append(f"#{i}: a simple symbol, render it by code instead of Flow: {{\"family\": \"card\", \"card\": {{\"fn\": \"symbol\", \"args\": [\"{ic}\", \"<caption or empty>\"]}}}}")
     cards_without = [s["i"] for s in shots if s["family"] == "card" and not s.get("card", {}).get("icon")]
     if cards_without: errs.append(f"cards without an icon: {cards_without} (use cards.card with an icon)")
     return errs, warns
@@ -147,6 +171,10 @@ if __name__ == "__main__":
     for e in errs: print("ERROR ", e)
     for w in warns: print("warn  ", w)
     prompts = build(shots, st)
+    if "--no-bg" not in args:           # two backgrounds, generated once: the code inserts are drawn on them (build_slideshow.py)
+        for f, bg, dark in (("BG", st["insert_bg"], ""), ("BG_DARK", st["dark_insert_bg"], st["dark"])):
+            prompts.append({"file": f, "i": 0, "family": "background", "prompt": re.sub(r"\s+", " ", " ".join(x for x in (
+                st.get("insert_prefix", st["prefix"]), "An empty page: " + bg, "nothing drawn at all, no object, no character, only the paper and its light.", dark, st["suffix"]) if x)).strip()})
     json.dump(prompts, open("prompts.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     fams = {}
     for s in shots: fams[s["family"]] = fams.get(s["family"], 0) + 1

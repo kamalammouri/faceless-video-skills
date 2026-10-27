@@ -14,6 +14,8 @@ shots.json  = the same list as for prompts.py, one entry per shot, in order:
 timing.json = either {"chars": "...", "end": [t0, t1, ...]} (ElevenLabs with-timestamps, per character)
               or a list of sentence start times [0.0, 4.2, ...] (one per shot)
 Missing Flow images fall back to a cream caption card so the build never stops; the list of missing files is printed.
+If flow/<dir>/BG.jpg (and BG_DARK.jpg) exist, generated once in Flow by prompts.py's two extra prompts, every card, chart, title and
+symbol is drawn on them instead of a flat colour, so code inserts share the video's paper texture and light.
 """
 import json, pathlib, subprocess, sys
 from PIL import Image, ImageDraw, ImageFont
@@ -37,7 +39,7 @@ def starts_from_timing(shots, timing):
     return out
 
 def title_card(text, dark=False):
-    im = Image.new("RGB", (W, H), (38, 48, 60) if dark else CREAM); d = ImageDraw.Draw(im); f = font(120, True)
+    im = cards.canvas(dark); d = ImageDraw.Draw(im); f = font(120, True)
     if d.textlength(text, font=f) > 1600:                       # wrap long titles on two balanced lines
         w = text.split(); k = len(w) // 2; lines = [" ".join(w[:k]), " ".join(w[k:])]
         while max(d.textlength(l, font=f) for l in lines) > 1600 and f.size > 60: f = font(f.size - 8, True)
@@ -46,7 +48,7 @@ def title_card(text, dark=False):
     return im
 
 def fallback(text):
-    im = Image.new("RGB", (W, H), CREAM); d = ImageDraw.Draw(im); words, lines, cur = text.split(), [], ""
+    im = cards.canvas(False); d = ImageDraw.Draw(im); words, lines, cur = text.split(), [], ""
     for w in words:
         t = (cur + " " + w).strip()
         if d.textlength(t, font=font(64)) <= 1500: cur = t
@@ -90,6 +92,10 @@ def main():
     flow_dir = pathlib.Path(sys.argv[sys.argv.index("--flow") + 1]) if "--flow" in sys.argv else pathlib.Path("flow")
     caption, motion = "--caption" in sys.argv, "--motion" in sys.argv
     shots = json.load(open(shots_f, encoding="utf-8")); timing = json.load(open(timing_f, encoding="utf-8"))
+    for dark, name in ((False, "BG"), (True, "BG_DARK")):     # backgrounds generated once in Flow: every code insert is drawn on them
+        bg = next((flow_dir / f"{name}{e}" for e in (".png", ".jpg", ".webp") if (flow_dir / f"{name}{e}").exists()), None)
+        if bg: cards.BG[dark] = charts.BG[dark] = str(bg)
+    if cards.BG[False] or cards.BG[True]: print("backgrounds:", cards.BG)
     starts = starts_from_timing(shots, timing)
     FF = imageio_ffmpeg.get_ffmpeg_exe()
     hh, mm, ss = subprocess.run([FF, "-i", voice], capture_output=True, text=True).stderr.split("Duration: ")[1].split(",")[0].split(":")

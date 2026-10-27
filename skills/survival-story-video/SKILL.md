@@ -38,7 +38,7 @@ Par défaut, livrer **script + plan de production** ; si l'utilisateur ne veut q
 
 
 ## Agents de production
-Le rédacteur seul se répète ; la production passe par des agents spécialisés lancés en parallèle avec l'outil Agent, chacun avec un brief complet (`references/agents.md`) : **Story architect** (3 angles au brief) et **Character designer** (fiche d'un style custom) avant le brouillon ; **Fact-checker** et **Script critic** après le brouillon ; **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot d'images ; **Publication checker** avant livraison. L'orchestrateur applique leurs tableaux de corrections et relance ce qui doit l'être. Ne jamais sauter Visual director et Image QC : ce sont eux qui empêchent les cartes nues, les bulles vides et les doublons.
+Le rédacteur seul se répète ; la production passe par des agents spécialisés lancés en parallèle avec l'outil Agent, chacun avec un brief complet (`references/agents.md`) : **Story architect** (3 angles au brief) et **Character designer** (fiche d'un style custom) avant le brouillon ; **Fact-checker** et **Script critic** après le brouillon ; **Render router** (plan par plan : code ou Flow ; un symbole seul, un chiffre, un score ou une frise ne vont jamais à Flow), puis **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot d'images ; **Publication checker** avant livraison. L'orchestrateur applique leurs tableaux de corrections et relance ce qui doit l'être. Ne jamais sauter Render router, Visual director et Image QC : ce sont eux qui empêchent les cartes nues, les bulles vides et les doublons.
 
 ## 1. Paramètres à choisir avant d'écrire
 

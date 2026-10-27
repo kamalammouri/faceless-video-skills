@@ -9,7 +9,9 @@ that says what the number is (clock, calendar, fuel, thermometer...), and consec
   card("gauge", "412 TABLETS", "of 730", value=0.56, icon="pills")   # number + progress bar
   python cards.py   -> writes cards_demo.jpg (all icons and layouts) for a visual check
 
-Icons: clock, calendar, fuel, thermo, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart, people, hair, dna
+Icons: clock, calendar, fuel, thermo, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart, people, hair, dna,
+       check, cross, question, exclamation, arrow_loop, gift, bulb, lock, coin, envelope, magnifier, star, eye, flag, door
+  symbol('check', 'verified')  -> one big centred icon with an optional caption: the insert Flow used to be asked for
 """
 import math, pathlib, sys
 from PIL import Image, ImageDraw, ImageFont
@@ -18,6 +20,13 @@ W, H = 1920, 1080
 CREAM, INK, GREY, WHITE = (245, 239, 224), (30, 27, 22), (150, 145, 135), (255, 255, 255)
 SAND, SAGE, BLUE, TERRA, ORANGE, SLATE = (232, 213, 176), (196, 210, 184), (168, 186, 204), (199, 123, 88), (240, 180, 120), (38, 48, 60)
 LW = 7  # ink line width
+BG = {False: None, True: None}   # optional background images (cream, dark) generated ONCE in Flow, so code inserts share the video's paper and light
+
+def canvas(dark=False, colour=None):
+    """The base 1920x1080 image of every code insert: the Flow background of the video if set (BG[dark]), else a flat colour."""
+    src = BG[bool(dark)]
+    if src and pathlib.Path(src).exists(): return Image.open(src).convert("RGB").resize((W, H))
+    return Image.new("RGB", (W, H), colour or (SLATE if dark else CREAM))
 
 def font(size, bold=False):
     for name in (("segoeprb.ttf" if bold else "segoepr.ttf"), "arial.ttf"):
@@ -178,6 +187,80 @@ def ic_dna(d, x, y, s):
         if abs(pts_a[i][0] - pts_b[i][0]) > s * 0.12: d.line([pts_a[i], pts_b[i]], fill=TERRA, width=5)
     d.line(pts_a, fill=INK, width=LW); d.line(pts_b, fill=BLUE, width=LW)
 
+# ---------- generic symbols (the inserts Flow used to draw: a check mark, a gift box, an arrow bent in a loop...) ----------
+def ic_check(d, x, y, s):
+    d.line([(x + s * 0.12, y + s * 0.55), (x + s * 0.4, y + s * 0.85), (x + s * 0.9, y + s * 0.2)], fill=SAGE, width=int(s * 0.16), joint="curve")
+    d.line([(x + s * 0.12, y + s * 0.55), (x + s * 0.4, y + s * 0.85), (x + s * 0.9, y + s * 0.2)], fill=INK, width=LW, joint="curve")
+
+def ic_cross(d, x, y, s):
+    for a, b in (((0.15, 0.15), (0.85, 0.85)), ((0.85, 0.15), (0.15, 0.85))):
+        d.line([(x + s * a[0], y + s * a[1]), (x + s * b[0], y + s * b[1])], fill=TERRA, width=int(s * 0.16))
+        d.line([(x + s * a[0], y + s * a[1]), (x + s * b[0], y + s * b[1])], fill=INK, width=LW)
+
+def ic_question(d, x, y, s):
+    f = font(int(s * 1.1), True); d.text((x + s / 2, y + s / 2), "?", font=f, fill=BLUE, anchor="mm", stroke_width=LW, stroke_fill=INK)
+
+def ic_exclamation(d, x, y, s):
+    f = font(int(s * 1.1), True); d.text((x + s / 2, y + s / 2), "!", font=f, fill=TERRA, anchor="mm", stroke_width=LW, stroke_fill=INK)
+
+def ic_arrow_loop(d, x, y, s):
+    """An arrow bent back on itself: a loop with an arrowhead (repeat, cycle, 'back to square one')."""
+    d.arc([x + s * 0.12, y + s * 0.12, x + s * 0.88, y + s * 0.88], 20, 330, fill=SAND, width=int(s * 0.13))
+    d.arc([x + s * 0.12, y + s * 0.12, x + s * 0.88, y + s * 0.88], 20, 330, fill=INK, width=LW)
+    d.arc([x + s * 0.25, y + s * 0.25, x + s * 0.75, y + s * 0.75], 20, 330, fill=INK, width=LW)
+    ax, ay = x + s * 0.86, y + s * 0.5 - s * 0.38 * 0.34
+    d.polygon([(ax - s * 0.12, ay - s * 0.16), (ax + s * 0.1, ay), (ax - s * 0.12, ay + s * 0.16)], fill=SAND, outline=INK)
+
+def ic_gift(d, x, y, s):
+    d.rectangle([x + s * 0.1, y + s * 0.4, x + s * 0.9, y + s * 0.95], fill=SAGE, outline=INK, width=LW)
+    d.rectangle([x + s * 0.05, y + s * 0.3, x + s * 0.95, y + s * 0.45], fill=SAGE, outline=INK, width=LW)
+    d.rectangle([x + s * 0.42, y + s * 0.3, x + s * 0.58, y + s * 0.95], fill=TERRA, outline=INK, width=LW)
+    for k in (-1, 1): d.ellipse([x + s * 0.5 + k * s * 0.2 - s * 0.14, y + s * 0.1, x + s * 0.5 + k * s * 0.2 + s * 0.14, y + s * 0.32], fill=TERRA, outline=INK, width=LW)
+
+def ic_bulb(d, x, y, s):
+    d.ellipse([x + s * 0.2, y, x + s * 0.8, y + s * 0.65], fill=ORANGE, outline=INK, width=LW)
+    d.rectangle([x + s * 0.38, y + s * 0.6, x + s * 0.62, y + s * 0.85], fill=WHITE, outline=INK, width=LW)
+    d.line([x + s * 0.38, y + s * 0.93, x + s * 0.62, y + s * 0.93], fill=INK, width=LW)
+    for a in (-30, 0, 30):
+        t = math.radians(-90 + a); d.line([x + s / 2 + math.cos(t) * s * 0.36, y + s * 0.33 + math.sin(t) * s * 0.36, x + s / 2 + math.cos(t) * s * 0.5, y + s * 0.33 + math.sin(t) * s * 0.5], fill=INK, width=5)
+
+def ic_lock(d, x, y, s):
+    d.rounded_rectangle([x + s * 0.15, y + s * 0.42, x + s * 0.85, y + s * 0.95], 24, fill=SAND, outline=INK, width=LW)
+    d.arc([x + s * 0.28, y + s * 0.05, x + s * 0.72, y + s * 0.6], 180, 360, fill=INK, width=LW + 4)
+    d.ellipse([x + s * 0.44, y + s * 0.58, x + s * 0.56, y + s * 0.7], fill=INK); d.line([x + s * 0.5, y + s * 0.66, x + s * 0.5, y + s * 0.82], fill=INK, width=6)
+
+def ic_coin(d, x, y, s):
+    d.ellipse([x + s * 0.08, y + s * 0.08, x + s * 0.92, y + s * 0.92], fill=ORANGE, outline=INK, width=LW)
+    d.ellipse([x + s * 0.22, y + s * 0.22, x + s * 0.78, y + s * 0.78], outline=INK, width=4)
+
+def ic_envelope(d, x, y, s):
+    d.rectangle([x + s * 0.05, y + s * 0.2, x + s * 0.95, y + s * 0.8], fill=WHITE, outline=INK, width=LW)
+    d.line([(x + s * 0.05, y + s * 0.2), (x + s * 0.5, y + s * 0.55), (x + s * 0.95, y + s * 0.2)], fill=INK, width=LW)
+
+def ic_magnifier(d, x, y, s):
+    d.ellipse([x + s * 0.05, y + s * 0.05, x + s * 0.65, y + s * 0.65], fill=BLUE, outline=INK, width=LW + 3)
+    d.line([x + s * 0.58, y + s * 0.58, x + s * 0.92, y + s * 0.92], fill=INK, width=int(s * 0.12))
+
+def ic_star(d, x, y, s):
+    pts = []
+    for k in range(10):
+        r = s * (0.48 if k % 2 == 0 else 0.2); t = math.radians(-90 + k * 36)
+        pts.append((x + s / 2 + r * math.cos(t), y + s / 2 + r * math.sin(t)))
+    d.polygon(pts, fill=ORANGE, outline=INK, width=LW)
+
+def ic_eye(d, x, y, s):
+    d.polygon([(x + s * 0.05, y + s * 0.5), (x + s * 0.5, y + s * 0.2), (x + s * 0.95, y + s * 0.5), (x + s * 0.5, y + s * 0.8)], fill=WHITE, outline=INK, width=LW)
+    d.ellipse([x + s * 0.36, y + s * 0.36, x + s * 0.64, y + s * 0.64], fill=BLUE, outline=INK, width=LW)
+    d.ellipse([x + s * 0.45, y + s * 0.45, x + s * 0.55, y + s * 0.55], fill=INK)
+
+def ic_flag(d, x, y, s):
+    d.line([x + s * 0.2, y + s * 0.05, x + s * 0.2, y + s * 0.95], fill=INK, width=LW + 2)
+    d.polygon([(x + s * 0.22, y + s * 0.08), (x + s * 0.9, y + s * 0.25), (x + s * 0.22, y + s * 0.45)], fill=TERRA, outline=INK, width=LW)
+
+def ic_door(d, x, y, s):
+    d.rectangle([x + s * 0.2, y + s * 0.05, x + s * 0.8, y + s * 0.95], fill=SAND, outline=INK, width=LW)
+    d.ellipse([x + s * 0.64, y + s * 0.48, x + s * 0.72, y + s * 0.56], fill=INK)
+
 ICONS = {n[3:]: f for n, f in globals().items() if n.startswith("ic_")}
 
 def draw_icon(d, name, x, y, s):
@@ -195,7 +278,7 @@ def card(icon, big, small="", layout="left", dark=False, icons=None, value=None,
             'compare' (big -> small with two icons), 'gauge' (number + bar, value 0..1)."""
     if icon in ("stamp", "compare", "gauge"): layout, icon = icon, icon if icon in ICONS else None
     bg, ink, sub = (SLATE, CREAM, (190, 196, 204)) if dark else (CREAM, INK, GREY)
-    im = Image.new("RGB", (W, H), bg); d = ImageDraw.Draw(im); acc = accent or TERRA
+    im = canvas(dark, bg); d = ImageDraw.Draw(im); acc = accent or TERRA
     if layout == "left":
         d.rounded_rectangle([200, 260, 1720, 820], 44, fill=WHITE if not dark else (50, 62, 76), outline=ink, width=6)
         draw_icon(d, icon, 300, 380, 320)
@@ -230,10 +313,18 @@ def card(icon, big, small="", layout="left", dark=False, icons=None, value=None,
         if small: d.text((960, 820), small, font=font(56), fill=sub, anchor="mm")
     return im
 
+def symbol(icon, caption="", dark=False):
+    """One big centred icon (a check mark, a gift box, a bent arrow), optional caption below: replaces a Flow 'single isolated object'."""
+    bg, ink, sub = (SLATE, CREAM, (190, 196, 204)) if dark else (CREAM, INK, GREY)
+    im = canvas(dark, bg); d = ImageDraw.Draw(im)
+    draw_icon(d, icon, 960 - 250, 220 if caption else 290, 500)
+    if caption: d.text((960, 860), caption, font=font(64), fill=sub, anchor="mm")
+    return im
+
 def scoreboard(left, right, left_name="", right_name="", dark=True, accent=None):
     """Two big numbers on a flip-board, 'VICTORY x30' style: scoreboard("21", "0", "YOU", "THEM")."""
     bg, ink = (SLATE, CREAM) if dark else (CREAM, INK)
-    im = Image.new("RGB", (W, H), bg); d = ImageDraw.Draw(im); acc = accent or TERRA
+    im = canvas(dark, bg); d = ImageDraw.Draw(im); acc = accent or TERRA
     for k, (num, name, cx) in enumerate(((left, left_name, 640), (right, right_name, 1280))):
         d.rounded_rectangle([cx - 260, 300, cx + 260, 760], 36, fill=(28, 30, 34), outline=ink, width=6)
         d.line([cx - 260, 530, cx + 260, 530], fill=bg, width=6)
@@ -245,7 +336,7 @@ def scoreboard(left, right, left_name="", right_name="", dark=True, accent=None)
 def phone(title, lines=(), dark=True, accent=None):
     """A phone screen with a short title and up to 4 lines: phone("MOM", ["3 missed calls"]), phone("MY BANK", ["$31,240.00", "SEND"])."""
     bg, ink = (SLATE, CREAM) if dark else (CREAM, INK)
-    im = Image.new("RGB", (W, H), bg); d = ImageDraw.Draw(im); acc = accent or TERRA
+    im = canvas(dark, bg); d = ImageDraw.Draw(im); acc = accent or TERRA
     x0, y0, x1, y1 = 700, 90, 1220, 990
     d.rounded_rectangle([x0, y0, x1, y1], 70, fill=(28, 30, 34), outline=ink, width=8)
     d.rounded_rectangle([x0 + 24, y0 + 24, x1 - 24, y1 - 24], 54, fill=WHITE if not dark else (236, 240, 244))
@@ -271,4 +362,9 @@ if __name__ == "__main__":
         im = card(ic, big, small, layout=lay, **kw).resize((480, 270)); sheet.paste(im, ((i % 4) * 480, (i // 4) * 270))
     for i, im in enumerate((scoreboard("21", "0", "YOU", "THEM"), phone("MOM", ["3 missed calls"]), phone("MY BANK", ["$31,240.00", "SEND"]), scoreboard("9", "10", "SAVED", "SHOTS", dark=False))):
         sheet.paste(im.resize((480, 270)), (i * 480, 4 * 270))
+    gen = ["check", "cross", "question", "exclamation", "arrow_loop", "gift", "bulb", "lock", "coin", "envelope", "magnifier", "star", "eye", "flag", "door"]
+    sheet2 = Image.new("RGB", (480 * 4, 270 * 4), "white")
+    for i, ic in enumerate(gen):
+        sheet2.paste(symbol(ic, ic.replace("_", " "), dark=(i % 5 == 4)).resize((480, 270)), ((i % 4) * 480, (i // 4) * 270))
+    out2 = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "cards_symbols.jpg"); sheet2.save(out2, quality=85); print(out2)
     out = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "cards_demo.jpg"); sheet.save(out, quality=85); print(out)

@@ -36,9 +36,12 @@ def font(size, bold=True):
         except OSError: pass
     return ImageFont.load_default()
 
+BG = {False: None, True: None}   # optional Flow-generated backgrounds (cream, dark), set by build_slideshow.py
+
 def canvas(bg=CREAM, card=(220, 150, 1700, 930)):
     """Background + rounded card. Returns (image, draw, card box)."""
-    im = Image.new("RGB", (W, H), bg); d = ImageDraw.Draw(im)
+    src = BG[bg != CREAM]
+    im = Image.open(src).convert("RGB").resize((W, H)) if src and pathlib.Path(src).exists() else Image.new("RGB", (W, H), bg); d = ImageDraw.Draw(im)
     if card: d.rounded_rectangle(card, 40, fill=CARD, outline=INK, width=LW)
     return im, d, card
 

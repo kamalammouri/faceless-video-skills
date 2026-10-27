@@ -66,6 +66,23 @@ du plus grave au plus léger. Rends un tableau : phrase | problème | réécritu
 Script : [SCRIPT]
 ```
 
+### Render router (code ou Flow, avant toute génération)
+```
+Tu décides, pour chaque plan d'une shot list de diaporama, s'il doit être généré par Google Flow (lent, limité à
+5 images par minute de vidéo, parfois faux) ou rendu par code (instantané, exact, gratuit : scripts/cards.py avec
+symbol / card / scoreboard / phone, scripts/charts.py pour graphiques, frises, comparaisons, carte-titre). Règle :
+Flow seulement pour (a) une scène avec le personnage récurrent ou d'autres personnes, (b) un objet qui a besoin de
+texture, de lumière ou de décor (un labo, une forêt, un visage), (c) une métaphore qui demande un dessin libre.
+Tout le reste passe par code : un symbole seul (coche, croix, flèche, cadeau, point d'interrogation, cadenas, pièce,
+enveloppe, loupe, étoile, œil, drapeau, porte, horloge, calendrier, cœur, clé, thermomètre, ampoule), un chiffre, un
+score, un bulletin, un écran de téléphone, une comparaison, une frise, un titre. Icônes disponibles : [LISTE ICONS de
+cards.py]. Pour chaque plan de la shot list, rends une ligne : i | famille actuelle | verdict (flow / code) | si code :
+le JSON exact du plan réécrit ({"family": "card", "card": {"fn": "symbol", "args": ["check", "verified"]}} ou
+{"family": "chart", ...}) ; si une icône manque dans cards.py, verdict « code (icône à ajouter : nom, description en
+10 mots) ». Termine par le compte : N plans Flow, M plans code, et les icônes à ajouter. Rien d'autre.
+Shot list : [SHOTS.JSON]  Icônes : [python -c "import cards; print(sorted(cards.ICONS))"]
+```
+
 ### Visual director
 ```
 Tu es directeur artistique d'un diaporama d'images fixes (une image par moment, zéro animation). Voici la shot list
