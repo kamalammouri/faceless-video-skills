@@ -18,7 +18,7 @@ Pourquoi : sans brief, chaque vidéo sortait avec le même personnage (la fiche 
 |---|---|---|---|
 | 1 | **Sujet / thème** (seulement s'il manque) | question libre : lieu, organisation, paradoxe, « comme la vidéo X » | `subject` |
 | 2 | **Style de personnage** (`references/character-styles.md`, ids de `scripts/styles.json`) | `stickman-meme` (Recommandé : grosse tête ronde blanche, visage meme, décor saturé) · `egg-headphones` (tête d'œuf, casque orange, storybook crème) · `storybook-human` (humain peint, film d'animation 90s) · `caveman-duo` · `thin-line` · **custom** (décrire en une phrase : l'agent Character designer fait la fiche) | `style`, `character` |
-| 3 | **Langue de la voix** | anglais (défaut du format) · français · autre | `voice_language` |
+| 3 | **Voix : moteur et langue** (`references/voice.md`) | `Gemini TTS, anglais` (Recommandé : voix studio, style dirigé par une phrase ; clé API Gemini et quota) · `Gemini TTS, français` · `edge-tts, anglais` (gratuit, sans clé, moins dirigeable) · `edge-tts, français` ; autre langue en « autre » | `voice.engine`, `voice_language` |
 | 4 | **Livrable** | script + plan de production (défaut) · script seul · production complète (script, images Flow, montage, fiche de publication) | `deliverable` |
 
 Paramètres annoncés avec leur défaut, **sans question** (l'utilisateur les change s'il veut, dans la même réponse) :
@@ -29,6 +29,7 @@ Paramètres annoncés avec leur défaut, **sans question** (l'utilisateur les ch
 | Ton | celui du format (documentaire sombre / documentaire chaleureux) | `tone` |
 | Costume du personnage | celui du style (`costume` dans `styles.json`) ; pour un récit par grades ou saisons, une liste de costumes par étape | `character.costume` |
 | Décor en une phrase | déduit du sujet, recopié dans chaque prompt | `setting` |
+| Voix : nom, style, débit | Gemini : `Kore`, style « calm, slow, low-pitched documentary narration, no enthusiasm » ; edge-tts : `en-US-GuyNeural` ou `fr-FR-HenriNeural`, débit `+0%` | `voice.name`, `voice.style`, `voice.rate` |
 | Miniature | `split-before-after` pour `stickman-meme` (perdant à gauche, gagnant à droite), `character-prop` pour les autres | `thumbnail` |
 | Série | épisode 1, pas de suite prévue | `series` |
 
@@ -56,6 +57,7 @@ Si le style est **custom** : lancer l'agent **Character designer** (`references/
   },
   "setting": "a small Antarctic research station of three plywood modules on a white plateau",
   "voice_language": "en",
+  "voice": { "engine": "gemini", "name": "Kore", "style": "calm, slow, low-pitched documentary narration, no enthusiasm", "rate": "+0%", "model": "gemini-3.8-flash-tts" },
   "duration_min": 11.5,
   "tone": "dark-documentary",
   "thumbnail": "split-before-after",
@@ -82,4 +84,5 @@ Si le style est **custom** : lancer l'agent **Character designer** (`references/
 - `python scripts/prompts.py shots.json` lit `brief.json` : préfixe, fiche du personnage, costume et décor viennent du style choisi. Plus aucune description de personnage dans le code.
 - Les briefs des agents **Prompt auditor** et **Image QC** reçoivent la phrase `qc` du style (et la fiche custom le cas échéant) à la place d'une description fixe.
 - La miniature suit le gabarit `thumbnail` du style (`styles.json`) : pour `stickman-meme`, le split « avant / après » des miniatures Galon Zéro.
+- `python scripts/tts.py shots.json` lit `brief.json` → `voice` : moteur (Gemini TTS ou edge-tts), voix, style, débit, langue ; il écrit `voice.wav` et `timing.json` pour le montage (`references/voice.md`).
 - La fiche de publication est écrite dans la langue de la voix.

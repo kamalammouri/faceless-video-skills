@@ -33,6 +33,7 @@ cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
 │   ├── flow-automation.md       # automatic image generation in Google Flow, house style prefix, no-bubble rules
 │   ├── brief.md                 # questions asked BEFORE writing: character style, scenario, parameters -> brief.json
 │   ├── character-styles.md      # catalogue of character styles (stickman meme, egg + headphones, painted human, caveman duo, thin line)
+│   ├── voice.md                 # voice track: Gemini TTS or edge-tts, chosen at the brief
 │   ├── agents.md                # briefs of the eight production agents
 │   ├── scene-catalogue.md       # what the reference channel shows: shares, patterns, rhythm rules
 │   ├── publication(-seo).md     # title, thumbnail, chapters, description, tags, category, Studio settings
@@ -42,6 +43,7 @@ cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
     ├── charts.py                # 24 chart / gauge / timeline / schema patterns measured on the reference channel
     ├── styles.json              # character styles: prefix, character sheet, costume slot, backgrounds, thumbnail template, QC sentence
     ├── prompts.py               # shot list + brief.json -> Flow prompts + rhythm lint
+    ├── tts.py                   # shot list + brief.json -> voice.wav + timing.json (Gemini TTS or edge-tts, one clip per shot)
     ├── build_slideshow.py       # shot list + voice timing -> mp4
     └── flow/
     ├── browser.mjs              # opens a real Chrome on Google Flow with a persistent profile (CDP :9222)
@@ -53,7 +55,7 @@ cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
 
 ## Pre-production brief and character styles
 
-Nothing is written before the user has answered two rounds of questions (`references/brief.md`): round 1 asks the subject (if missing), the **character style**, the voice language and the deliverable; round 2 shows three scenario angles written by the `story-architect` agent and asks which one to produce. The answers go to `brief.json` in the working folder, and every downstream step reads it.
+Nothing is written before the user has answered two rounds of questions (`references/brief.md`): round 1 asks the subject (if missing), the **character style**, the **voice engine and language** (Gemini TTS or edge-tts) and the deliverable; round 2 shows three scenario angles written by the `story-architect` agent and asks which one to produce. The answers go to `brief.json` in the working folder, and every downstream step reads it.
 
 The character styles live in `scripts/styles.json` (`python scripts/<skill>/prompts.py --styles` lists them): `stickman-meme` (big white round head, rage-comic face, thick outlines, saturated painted sets: the style of the Galon Zéro thumbnails, default), `egg-headphones` (the original cream storybook character), `storybook-human` (painted human protagonist, 1990s animation film look), `caveman-duo`, `thin-line`, or a custom sheet written by the `character-designer` agent. Each style carries its prefix, character sheet with a `{costume}` slot (the costume changes with rank, season or state), backgrounds, dark variant, thumbnail template and the sentence the Image QC agent checks against. `prompts.py` assembles every Flow prompt from the chosen style, so no character description is hard-coded any more.
 
@@ -91,7 +93,7 @@ python skills/why-explainer-video/scripts/flow/convert.py flow/my-video
 
 ## Voice and assembly
 
-The skills assume an AI voice with character-level timing (ElevenLabs `with-timestamps`, or edge-tts word boundaries as a free fallback) and ffmpeg concatenation of one image per sentence or per moment. Keep API keys in a local `.env`; nothing in this repository reads or stores them.
+The voice engine is asked at the brief: **Gemini TTS** (the "Generate speech" tool of Google AI Studio, through the Gemini API: studio voices, a style sentence such as "calm, slow, documentary narration", French and English, needs `GEMINI_API_KEY`) or **edge-tts** (free, no key, less steerable). `scripts/tts.py shots.json` synthesises one clip per shot with the chosen engine, concatenates them and writes `voice.wav` plus `timing.json` with the exact start time of every shot, so no timestamp API is needed; a clip is regenerated only when its sentence changes. `build_slideshow.py` then concatenates one image per shot on that track with ffmpeg. Keep `GEMINI_API_KEY` in a local `.env` (git-ignored); `tts.py` reads it from there and nothing else in the repository stores a key. ElevenLabs `with-timestamps` output is still accepted by `build_slideshow.py` as an alternative `timing.json`.
 
 ## License
 
