@@ -182,4 +182,14 @@ Une carte « chiffre seul dans un cadre » lue trois fois de suite fait pauvre :
 - Scènes sombres (`Dark variant`) : jamais plus de 3 de suite, pour que le retour au crème reste un soulagement.
 - Le **Visual director** (`references/agents.md`) audite la shot list avant génération ; il ne faut pas s'auto-auditer.
 
+
+### Outils de production (dans `scripts/`)
+- `prompts.py shots.json` : construit `prompts.json` pour Flow à partir de la shot list (préfixe maison, fiche personnage, décor, gabarit par famille, cadrage en rotation, variante sombre, suffixe anti-texte) et **lint** la liste : mots interdits qui déclenchent des bulles, 4 scènes de suite, deux visuels de données de suite, quasi-doublons, plus de 14 images sans visuel de données, carte sans icône. Corriger les erreurs avant de générer.
+- `cards.py` : cartes de chiffres avec icône. `charts.py` : 24 patrons de graphiques, jauges, frises et schémas.
+- `build_slideshow.py shots.json voice.wav timing.json out.mp4 --flow flow/<video>` : monte la vidéo, chaque image tenue jusqu'à la phrase suivante ; cartes, graphiques et titres rendus par code, images Flow chargées par nom, carte de secours si une image manque.
+- `scripts/flow/` : génération automatique des images Flow (`references/flow-automation.md`).
+Le format de `shots.json` est documenté en tête de `prompts.py` et `build_slideshow.py` : une seule liste sert aux prompts, au lint et au montage.
+
+Les parts de familles mesurées sur la chaîne de référence et les règles de rythme (une scène, un insert, une scène ; un visuel de données par minute) sont dans `references/scene-catalogue.md`.
+
 Le mode diaporama renonce au grain, aux overlays et à la pousse lente des §7.4 à 7.7 ; il garde l'étalonnage et le silence.

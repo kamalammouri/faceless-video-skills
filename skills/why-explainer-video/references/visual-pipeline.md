@@ -40,7 +40,9 @@ Une carte « chiffre seul dans un cadre » lue trois fois de suite fait pauvre :
 - Scènes sombres (`Dark variant`) : jamais plus de 3 de suite, pour que le retour au crème reste un soulagement.
 - Le **Visual director** (`references/agents.md`) audite la shot list avant génération ; il ne faut pas s'auto-auditer.
 
-## 3. Les cinq familles de plans
+## 3. Les familles de plans
+
+**Parts mesurées sur 30 vidéos et 8 250 plans** (`references/scene-catalogue.md`) : scènes 62 %, schémas 15 %, icônes 15 %, visuels de données 7 % (un par minute), titres 0,6 %. La vidéo la plus vue monte à 18 % de visuels de données et 29 % d'icônes : viser cette répartition pour un sujet à études et chiffres, et la répartition moyenne pour un sujet de comportement. Les parts du tableau ci-dessous venaient des deux premières vidéos étudiées ; elles restent valables pour un format très « icône », mais le catalogue fait foi.
 
 | Famille | Part cible | Quand l'utiliser | Exemple de contenu |
 |---|---|---|---|
@@ -109,6 +111,14 @@ Un tableau, une ligne par phrase du script :
 | 25 | 1:53 | Starting around the age of 30… | Graphique | AGE 30 / 38 / 46 | code : barres doublant à chaque âge |
 
 Ajouter en fin de liste : la miniature (voir `publication-seo.md`) et la carte finale « NEXT : [titre de l'épisode suivant] ».
+
+
+### Outils de production (dans `scripts/`)
+- `prompts.py shots.json` : construit `prompts.json` pour Flow à partir de la shot list (préfixe maison, fiche personnage, décor, gabarit par famille, cadrage en rotation, variante sombre, suffixe anti-texte) et **lint** la liste : mots interdits qui déclenchent des bulles, 4 scènes de suite, deux visuels de données de suite, quasi-doublons, plus de 14 images sans visuel de données, carte sans icône. Corriger les erreurs avant de générer.
+- `cards.py` : cartes de chiffres avec icône. `charts.py` : 24 patrons de graphiques, jauges, frises et schémas.
+- `build_slideshow.py shots.json voice.wav timing.json out.mp4 --flow flow/<video>` : monte la vidéo, chaque image tenue jusqu'à la phrase suivante ; cartes, graphiques et titres rendus par code, images Flow chargées par nom, carte de secours si une image manque.
+- `scripts/flow/` : génération automatique des images Flow (`references/flow-automation.md`).
+Le format de `shots.json` est documenté en tête de `prompts.py` et `build_slideshow.py` : une seule liste sert aux prompts, au lint et au montage.
 
 ## 8. Assemblage
 

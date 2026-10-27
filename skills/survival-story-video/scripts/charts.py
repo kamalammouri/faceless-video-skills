@@ -227,13 +227,109 @@ def pills(items, bg=CREAM, accent_value="YES"):
         d.text((cx, 510), val, font=font(44), fill=INK, anchor="mm"); d.text((cx, 730), lab, font=font(40), fill=INK, anchor="mm")
     return im
 
+# ---------------- timelines and schemas measured on the channel (2nd pass, 30 videos) ----------------
+def timeline_bar(label, pos=0.75, sub="", bg=CREAM, marker="tri"):
+    """Thick tan bar with a marker at pos (0..1) and the label above it: '8,500 YEARS AGO', '850,000 YEARS AGO'."""
+    im, d, _ = canvas(bg); x0, x1, y = 340, 1580, 600
+    d.rounded_rectangle([x0, y - 36, x1, y + 36], 20, fill=SAND, outline=INK, width=LW)
+    for t in range(1, 10): x = x0 + (x1 - x0) * t / 10; d.line([x, y + 12, x, y + 36], fill=INK, width=3)
+    x = x0 + (x1 - x0) * pos
+    if marker == "tri": d.polygon([(x, y - 44), (x - 26, y - 90), (x + 26, y - 90)], fill=GREEN if pos < 0.5 else RED, outline=INK)
+    else: d.ellipse([x - 22, y - 22, x + 22, y + 22], fill=RED, outline=INK, width=4)
+    d.text((x, y - 150), label, font=font(64), fill=INK, anchor="mm")
+    if sub: title(d, sub, y=740, size=44, fill=GREY)
+    return im
+
+def timeline_arrow(label, direction="right", ticks=8, bg=CREAM, end_label="TODAY"):
+    """Thick tan arrow with ticks and the duration above: '2,000,000 YEARS ->' or '<- TODAY'."""
+    im, d, _ = canvas(bg); x0, x1, y = 360, 1560, 600; h = 46
+    if direction == "right":
+        d.rectangle([x0, y - h, x1 - 120, y + h], fill=SAND, outline=INK, width=LW); d.polygon([(x1 - 130, y - 100), (x1, y), (x1 - 130, y + 100)], fill=SAND, outline=INK)
+        d.line([x1 - 130, y - 100, x1 - 130, y - h], fill=SAND, width=8); d.line([x1 - 130, y + 100, x1 - 130, y + h], fill=SAND, width=8)
+    else:
+        d.rectangle([x0 + 120, y - h, x1, y + h], fill=SAND, outline=INK, width=LW); d.polygon([(x0 + 130, y - 100), (x0, y), (x0 + 130, y + 100)], fill=SAND, outline=INK)
+        d.line([x0 + 130, y - 100, x0 + 130, y - h], fill=SAND, width=8); d.line([x0 + 130, y + 100, x0 + 130, y + h], fill=SAND, width=8)
+    for t in range(1, ticks): x = x0 + 120 + (x1 - x0 - 240) * t / ticks; d.line([x, y + 10, x, y + h], fill=INK, width=4)
+    d.text((W // 2, 440), label, font=font(72), fill=INK, anchor="mm")
+    if end_label: d.text((x1 - 40 if direction == "right" else x0 + 40, 720), end_label, font=font(44), fill=INK, anchor="rm" if direction == "right" else "lm")
+    return im
+
+def timeline_segment(label, a=0.3, b=0.55, bg=CREAM, color=RED, ends=("", "")):
+    """Tan bar with one highlighted segment between a and b, bracket + label above: '8 WEEKS'."""
+    im, d, _ = canvas(bg); x0, x1, y = 340, 1580, 600
+    d.rounded_rectangle([x0, y - 34, x1, y + 34], 34, fill=SAND, outline=INK, width=LW)
+    xa, xb = x0 + (x1 - x0) * a, x0 + (x1 - x0) * b
+    d.rectangle([xa, y - 30, xb, y + 30], fill=color)
+    d.line([xa, y - 70, xa, y - 90, xb, y - 90, xb, y - 70], fill=INK, width=5)
+    d.text(((xa + xb) / 2, y - 160), label, font=font(64), fill=INK, anchor="mm")
+    for lab, x, anc in ((ends[0], x0, "lm"), (ends[1], x1, "rm")):
+        if lab: d.text((x, y + 90), lab, font=font(36), fill=GREY, anchor=anc)
+    return im
+
+def arrow_ab(a_img, b_img, top=("", ""), bottom=("", ""), bg=CREAM, color=RED):
+    """A -> B with two pictures (PIL images), optional numbers above ('200', '0') and words below."""
+    im, d, _ = canvas(bg, card=None)
+    for ic, cx in ((a_img, 560), (b_img, 1360)):
+        if ic is not None: ic = ic.convert("RGBA"); ic.thumbnail((460, 460)); im.paste(ic, (cx - ic.width // 2, 540 - ic.height // 2), ic)
+    d.polygon([(850, 500), (1010, 500), (1010, 450), (1110, 540), (1010, 630), (1010, 580), (850, 580)], fill=color, outline=INK)
+    for k, cx in enumerate((560, 1360)):
+        if top[k]: d.text((cx, 230), top[k], font=font(84), fill=INK, anchor="mm")
+        if bottom[k]: d.text((cx, 860), bottom[k], font=font(44), fill=INK, anchor="mm")
+    return im
+
+def balance(left, right, tilt=0.0, bg=CREAM, left_img=None, right_img=None):
+    """Balance scale with two labels under the pans; tilt -1..1 (negative = left pan down)."""
+    im, d, _ = canvas(bg, card=None); cx, top = 960, 260
+    d.rectangle([cx - 14, top, cx + 14, 820], fill=INK); d.rectangle([cx - 160, 820, cx + 160, 850], fill=INK)
+    dy = 90 * tilt
+    for sx, lab, ic in ((-1, left, left_img), (1, right, right_img)):
+        px = cx + sx * 420; py = top + 60 + sx * dy
+        d.line([cx, top, px, py], fill=INK, width=8)
+        for k in (-110, 110): d.line([px, py, px + k, py + 160], fill=INK, width=5)
+        d.chord([px - 150, py + 110, px + 150, py + 230], 0, 180, fill=SAND, outline=INK, width=LW)
+        if ic is not None: ic = ic.convert("RGBA"); ic.thumbnail((150, 150)); im.paste(ic, (int(px - ic.width / 2), int(py + 150 - ic.height)), ic)
+        d.text((px, py + 300), lab, font=font(56), fill=INK, anchor="mm")
+    return im
+
+def cycle(imgs, labels=(), bg=CREAM):
+    """Circular arrows with 3 to 5 pictures placed around: a loop, a life cycle, a feedback."""
+    im, d, _ = canvas(bg, card=None); cx, cy, r = 960, 560, 300; n = len(imgs)
+    d.arc([cx - r, cy - r, cx + r, cy + r], 0, 360, fill=INK, width=12)
+    for k in range(n):
+        a = math.radians(-90 + 360 * (k + 0.5) / n); ax, ay = cx + r * math.cos(a), cy + r * math.sin(a)
+        t = a + math.pi / 2; d.polygon([(ax + 28 * math.cos(t), ay + 28 * math.sin(t)), (ax + 22 * math.cos(a), ay + 22 * math.sin(a)), (ax - 22 * math.cos(a), ay - 22 * math.sin(a))], fill=INK)
+    for k, ic in enumerate(imgs):
+        a = math.radians(-90 + 360 * k / n); px, py = cx + r * math.cos(a), cy + r * math.sin(a)
+        d.ellipse([px - 90, py - 90, px + 90, py + 90], fill=CARD, outline=INK, width=LW)
+        if ic is not None: ic = ic.convert("RGBA"); ic.thumbnail((130, 130)); im.paste(ic, (int(px - ic.width / 2), int(py - ic.height / 2)), ic)
+        if k < len(labels): d.text((px, py + 130), labels[k], font=font(36), fill=INK, anchor="mm")
+    return im
+
+def equation(a_n, a_img, b_n, b_img, text, bg=CREAM):
+    """Pictogram equation: a_n copies of picture A over b_n copies of picture B, caption '1 STRIDE = 1 BREATH'."""
+    im, d, _ = canvas(bg, card=None)
+    for row, (n, ic) in enumerate(((a_n, a_img), (b_n, b_img))):
+        y = 300 + row * 260; step = min(200, 1400 // max(1, n)); x0 = W // 2 - step * (n - 1) / 2
+        for k in range(n):
+            if ic is not None: p = ic.convert("RGBA"); p.thumbnail((150, 150)); im.paste(p, (int(x0 + k * step - p.width / 2), int(y - p.height / 2)), p)
+    d.text((W // 2, 880), text, font=font(72), fill=INK, anchor="mm")
+    return im
+
+def split_compare(left_img, right_img, labels=("", ""), bg=CREAM):
+    """Two pictures side by side split by a vertical dotted line (the channel's most frequent schema)."""
+    return compare((labels[0], ""), (labels[1], ""), icons=(left_img, right_img), bg=bg)
+
 if __name__ == "__main__":
-    demo = [bar_ratio("100x", "ROOM AIR", "5% CO2"), bars([("CO2", 40, GREY), ("O2", 42, GREEN), ("EXERCISE", 41, ORANGE)], ref=45),
+    from PIL import Image as _I
+    _blob = _I.new("RGBA", (200, 200), (0, 0, 0, 0)); ImageDraw.Draw(_blob).ellipse([10, 10, 190, 190], fill=ORANGE, outline=INK, width=8)
+    demo = [timeline_bar("8,500 YEARS AGO", 0.8), timeline_arrow("2,000,000 YEARS"), timeline_segment("8 WEEKS", 0.3, 0.55, ends=("BIRTH", "ADULT")),
+            arrow_ab(_blob, _blob, top=("200", "0"), bottom=("CALORIES", "LEFT")), balance("RISK", "REWARD", tilt=0.4, left_img=_blob, right_img=_blob),
+            cycle([_blob] * 4, ("SLEEP", "EAT", "MOVE", "REST")), equation(4, _blob, 2, _blob, "1 STRIDE = 1 BREATH"), split_compare(_blob, _blob, ("APE", "HUMAN")),bar_ratio("100x", "ROOM AIR", "5% CO2"), bars([("CO2", 40, GREY), ("O2", 42, GREEN), ("EXERCISE", 41, ORANGE)], ref=45),
             pie(20, "CALORIES"), line([0, 1, 1, 2, 2, 5, 9], "WEEK 1", "WEEK 12", color=RED), lines2([9, 7, 4, 2, 1], [9, 8, 7, 6, 5], ("FAST", "SLOW")),
             dots("86 BILLION", "neurons", n=60, icon="*", highlight=12), scatter([(1, 1), (2, 2.2), (3, 2.8), (4, 4.1), (5, 4.8), (6, 6.3), (3.5, 3.2)], "AGE", "RISK"),
             thermo("+0.5°", "brain", 0.7), thermo2(("BIRD", 0.8), ("MAMMAL", 0.5)), hbar_gauge(0.72, label="BODY TEMPERATURE"), dial(0.8),
             timeline("6 MONTHS", sub="before the first word"), timeline_marks(["BIRTH", "6 MO", "2 YR", "ADULT"], [0, 0.25, 0.55, 1], highlight=1),
             daynight(["6 AM", "NOON", "10 PM"]), compare(("FAST", "hare"), ("SLOW", "tortoise"), accent_side=0), pills([("A", "YES"), ("B", "NO"), ("C", "YES")])]
-    sheet = Image.new("RGB", (480 * 4, 270 * 4), "white")
+    sheet = Image.new("RGB", (480 * 4, 270 * math.ceil(len(demo) / 4)), "white")
     for i, im in enumerate(demo): sheet.paste(im.resize((480, 270)), ((i % 4) * 480, (i // 4) * 270))
     out = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "charts_demo.jpg"); sheet.save(out, quality=85); print(out)

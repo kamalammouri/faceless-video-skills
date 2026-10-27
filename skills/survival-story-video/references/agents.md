@@ -42,7 +42,9 @@ famille ; (2) jamais deux compositions identiques (même cadrage, même objet, m
 POV ; (4) chaque chiffre important a une carte AVEC icône et une mise en page différente de la carte précédente
 (left, top, stamp, compare, gauge) ; (5) chaque analogie du script a une image métaphorique, pas une image littérale ;
 (6) les moments de nuit ou de danger sont en « Dark variant », mais jamais plus de 3 de suite ; (7) le motif récurrent
-revient au milieu et à la fin. Rends la shot list complète corrigée dans le même format, puis 5 lignes de changements.
+revient au milieu et à la fin ; (8) règles mesurées sur la chaîne de référence (scene-catalogue.md) : une scène, un insert, une scène ;
+un visuel de données au moins toutes les 14 images, jamais deux de suite ; chaque chiffre de la voix a son visuel. Rends la shot
+list complète corrigée dans le même format, puis 5 lignes de changements.
 Shot list : [SHOT LIST]
 ```
 
