@@ -30,10 +30,13 @@ cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
 ├── SKILL.md                     # formula, workflow, calibrated structure, writing rules, QC checklist
 ├── references/
 │   ├── script-template.md       # mechanics of each section, word budgets
-│   ├── flow-automation.md       # automatic image generation in Google Flow + house style prefix
+│   ├── flow-automation.md       # automatic image generation in Google Flow, house style prefix, no-bubble rules
+│   ├── agents.md                # briefs of the six production agents
 │   ├── publication(-seo).md     # title, thumbnail, chapters, description, tags, category, Studio settings
 │   └── …                        # fact bank, beat sheet, visual pipeline, topic bank
-└── scripts/flow/
+└── scripts/
+    ├── cards.py                 # number cards with icons, five layouts
+    └── flow/
     ├── browser.mjs              # opens a real Chrome on Google Flow with a persistent profile (CDP :9222)
     ├── login.mjs                # waits for YOU to sign in (never types credentials)
     ├── batch.mjs                # pastes every prompt of prompts.json, downloads each image, resumable
@@ -54,6 +57,14 @@ python skills/why-explainer-video/scripts/flow/convert.py flow/my-video
 ```
 
 `prompts.json` is `[{"file": "F01", "prompt": "<style prefix> <scene>"}, …]`. Measured: about 25 s per image, 65 images in 27 minutes. Requirements: Node 18+, Chrome, a Google account with Flow (AI Pro or Ultra credits), Python 3 with Pillow.
+
+## Number cards with icons (no bare numbers)
+
+`skills/*/scripts/cards.py` renders every number of the script as a card with a hand-drawn icon (clock, calendar, fuel, thermometer, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart) in one of five layouts (left, top, stamp, compare, gauge). `python cards.py` writes a demo sheet.
+
+## Production agents
+
+`agents/` holds Claude Code agent definitions (copy them to `.claude/agents/` in your project): `fact-checker`, `visual-director` (shot-list variety audit), `image-qc` (vision check of the contact sheet: speech bubbles, text, wrong character). The full briefs, including Script critic, Prompt auditor and Publication checker, are in each skill's `references/agents.md`, so they work with the plain Agent tool too.
 
 ## Voice and assembly
 

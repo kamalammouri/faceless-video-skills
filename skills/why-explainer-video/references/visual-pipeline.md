@@ -25,6 +25,21 @@ La vidéo qui a marché est celle qui montre **plus de schémas et de chiffres**
 - Fond **gris-bleu sombre** uniquement pour la nuit, la menace, la mort : 5 % des images au maximum, pour que le contraste reste un signal.
 - Logo ou mot « SUBSCRIBE » en filigrane discret en bas à droite sur toute la vidéo.
 
+
+### Cartes de chiffres : une icône, toujours, et jamais deux fois la même mise en page de suite
+Une carte « chiffre seul dans un cadre » lue trois fois de suite fait pauvre : c'est le premier reproche fait à la vidéo polaire. Règles :
+- Chaque carte est rendue par `scripts/cards.py` (`card(icon, big, small, layout)`), qui dessine l'icône à l'encre : clock, calendar, fuel, thermo, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart. Un chiffre sans icône n'est pas livrable ; s'il manque une icône, l'ajouter à `cards.py` (15 lignes de PIL) plutôt que de livrer une carte nue.
+- Cinq mises en page à faire tourner : `left` (icône à gauche), `top` (icône au-dessus), `stamp` (page de calendrier pour « DAY n »), `compare` (A = B avec deux icônes), `gauge` (chiffre + barre de niveau). Deux cartes consécutives n'ont jamais la même mise en page.
+- Le petit texte sous le chiffre dit ce que le chiffre fait (« nothing lands », « before the pipes freeze »), pas l'unité déjà visible.
+- `python scripts/cards.py` rend une planche de démonstration : la regarder avant de produire.
+
+### Variété des plans : les règles anti-doublon
+- Jamais plus de **2 images consécutives de la même famille** (carte, scène, schéma, icône).
+- Jamais **deux compositions identiques** (même cadrage, même objet, personnage à la même place) à moins de 10 images d'écart ; varier l'échelle : plan large, plan moyen, gros plan objet, vue en coupe, vue de dessus, POV.
+- Chaque **analogie** du script a une image métaphorique (la chose comparée), pas une image littérale de la scène.
+- Scènes sombres (`Dark variant`) : jamais plus de 3 de suite, pour que le retour au crème reste un soulagement.
+- Le **Visual director** (`references/agents.md`) audite la shot list avant génération ; il ne faut pas s'auto-auditer.
+
 ## 3. Les cinq familles de plans
 
 | Famille | Part cible | Quand l'utiliser | Exemple de contenu |

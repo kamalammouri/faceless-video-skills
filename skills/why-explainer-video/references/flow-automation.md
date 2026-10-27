@@ -27,10 +27,19 @@ Google Flow n'a pas d'API. Ce qui marche, mesuré sur un lot de 65 images (27 mi
 - Une image par phrase (300 images pour 20 min) coûte 2 h de génération et autant de crédits : regrouper en **un plan par moment** (5 à 15 s, 60 à 70 images pour 11 min) et faire les chiffres, cartes et graphiques par code.
 - Les images avec personnage sont les seules que Flow fait mieux que le code ; icônes, schémas, frises et chiffres restent par code (exacts, cohérents, gratuits).
 
+
+## Ce que Flow dessine quand on ne le lui interdit pas : bulles, panneaux, cadrans
+
+Le générateur dessine **tout** ce que le prompt évoque. « The character calls the base on the radio » donne un personnage avec deux bulles de dialogue vides, puisque le texte est interdit : c'est l'image la plus moche de la vidéo polaire. Règles pour chaque prompt :
+- Mots interdits dans la scène : `talking`, `calling`, `says`, `speaks`, `conversation`, `sign`, `label`, `poster`, `screen showing`, `reads`, `written`, `clock showing`, `gauge reading`. Décrire la **posture** à la place : « handset held to the side of the head, mouth closed », « looking at a blank screen that glows », « a round dial with a single red needle, no digits ».
+- Terminer chaque prompt par : `no text, no letters, no numbers, no speech bubbles, no signs, no labels`.
+- Les chiffres, heures, jours, jauges, cartes et graphiques ne sont **jamais** demandés à Flow : ils sont rendus par `scripts/cards.py` et les graphiques par code (exacts, cohérents, gratuits).
+- Après chaque lot, l'agent **Image QC** (`references/agents.md`) regarde la planche contact et liste les rejets (bulle, texte, personnage différent, cadrage) avec un prompt réécrit ; supprimer les fichiers rejetés et relancer `batch.mjs`, qui ne régénère que ceux-là. Deux passes maximum, puis remplacer par une carte par code.
+
 ## Préfixe de style maison (validé par l'utilisateur sur 65 images)
 
 ```
-Modern storybook illustration, soft textured pencil shading, gentle ambient lighting, clean minimalist composition, generous empty space, no text, no letters, no words, 16:9 wide format. Plain cream-colored paper background. Recurring character: a whimsical figure with a smooth matte white egg for a head, small dark dot eyes and thin expressive eyebrows, thin stick-figure arms and legs, wearing a simple dusty-blue t-shirt and dark mittens, with large vintage over-ear headphones in warm orange-brown leather tones around the egg head. Keep this exact character design in every image. Setting: [DÉCOR EN UNE PHRASE, IDENTIQUE DANS TOUS LES PROMPTS].
+Modern storybook illustration, soft textured pencil shading, gentle ambient lighting, clean minimalist composition, generous empty space, no text, no letters, no words, 16:9 wide format. Plain cream-colored paper background. Recurring character: a whimsical figure with a smooth matte white egg for a head, small dark dot eyes and thin expressive eyebrows, thin stick-figure arms and legs, wearing a simple dusty-blue t-shirt and dark mittens, with large vintage over-ear headphones in warm orange-brown leather tones around the egg head. Keep this exact character design in every image. Setting: [DÉCOR EN UNE PHRASE, IDENTIQUE DANS TOUS LES PROMPTS]. [SCÈNE] no text, no letters, no numbers, no speech bubbles, no signs, no labels.
 ```
 
 Variante sombre, à ajouter aux scènes de nuit ou de danger : `Dark variant: same drawing style, but a dark slate-blue background instead of cream, with a single warm orange light source.`

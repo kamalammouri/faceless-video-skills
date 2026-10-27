@@ -28,10 +28,14 @@ Pourquoi ça marche : le titre promet que la réponse connue est fausse ; la sc�
 1. **Choisir le sujet** avec le test du miroir (section 1). Si l'utilisateur n'en donne pas, en proposer 3 et prendre le premier. `references/topic-bank.md` pour les idées et les sujets à éviter.
 2. **Rassembler les faits** : 3 à 5 études ou scientifiques nommés, avec année, institution et un chiffre chacun. Chercher sur le web ; ne jamais inventer un nom, une année ou un chiffre. Marquer `[vérifié]` dans le brouillon.
 3. **Écrire le script** avec `references/script-template.md` (mécanique de chaque temps, budgets de mots) et les règles de la section 3.
-4. **Construire la liste d'images** avec `references/visual-pipeline.md` : une image par phrase, famille de plan, prompt complet.
+4. **Construire la liste d'images** avec `references/visual-pipeline.md` : une image par phrase, famille de plan, prompt complet ; cartes de chiffres par `scripts/cards.py` (icône obligatoire, mises en page en rotation) ; puis audit par les agents Visual director et Prompt auditor.
 5. **Générer les images** : scènes avec personnage par Google Flow, en automatique avec `references/flow-automation.md` (scripts dans `scripts/flow/`) ; icônes, schémas, graphiques et cartes par code. Puis assembler (voix + images) et vérifier sur une planche contact.
 6. **Publication** : la fiche complète de `references/publication-seo.md` §0, avec la **catégorie Éducation** toujours écrite, la miniature texte par code, les chapitres calés sur la voix.
 7. **Contrôle qualité** (section 5) puis livraison.
+
+
+## Agents de production
+Le rédacteur seul se répète ; la production passe par des agents spécialisés lancés en parallèle avec l'outil Agent, chacun avec un brief complet (`references/agents.md`) : **Fact-checker** et **Script critic** après le brouillon ; **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot d'images ; **Publication checker** avant livraison. L'orchestrateur applique leurs tableaux de corrections et relance ce qui doit l'être. Ne jamais sauter Visual director et Image QC : ce sont eux qui empêchent les cartes nues, les bulles vides et les doublons.
 
 ## 1. Le test du miroir (choix du sujet)
 
@@ -98,4 +102,4 @@ Cinq familles de plans, à mélanger : icône + 1 à 3 mots (35 %), scène avec 
 - [ ] Aucun label d'image qui décrit l'image au lieu de nommer la chose (« LARGE CALM CLOCK FACE » est une erreur de la référence)
 - [ ] Script sans symboles ni abréviations pour la voix IA
 - [ ] Fiche de publication complète (§0 de `publication-seo.md`) : **catégorie Éducation écrite**, tags ≤ 500 caractères vérifiés, chapitres aux temps réels de la voix, contenu synthétique = oui, commentaire à épingler
-- [ ] Images : planche contact vérifiée (même personnage partout, aucun texte généré dans l'image), miniature 1280 × 720 avec texte par code
+- [ ] Images : planche contact passée par l'agent Image QC (aucune bulle de dialogue, aucun texte généré, même personnage partout), rejets régénérés ; aucune carte de chiffre sans icône ; jamais 3 images de même famille de suite ; miniature 1280 × 720 avec texte par code

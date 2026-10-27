@@ -167,4 +167,19 @@ Pour produire une vidéo de survie à moindre coût :
 - Texte à l'écran = mot ou chiffre exact de la voix, 1 à 3 mots.
 - Assemblage ffmpeg : liste de concaténation image + durée, piste voix, lit sonore discret.
 
+
+### Cartes de chiffres : une icône, toujours, et jamais deux fois la même mise en page de suite
+Une carte « chiffre seul dans un cadre » lue trois fois de suite fait pauvre : c'est le premier reproche fait à la vidéo polaire. Règles :
+- Chaque carte est rendue par `scripts/cards.py` (`card(icon, big, small, layout)`), qui dessine l'icône à l'encre : clock, calendar, fuel, thermo, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart. Un chiffre sans icône n'est pas livrable ; s'il manque une icône, l'ajouter à `cards.py` (15 lignes de PIL) plutôt que de livrer une carte nue.
+- Cinq mises en page à faire tourner : `left` (icône à gauche), `top` (icône au-dessus), `stamp` (page de calendrier pour « DAY n »), `compare` (A = B avec deux icônes), `gauge` (chiffre + barre de niveau). Deux cartes consécutives n'ont jamais la même mise en page.
+- Le petit texte sous le chiffre dit ce que le chiffre fait (« nothing lands », « before the pipes freeze »), pas l'unité déjà visible.
+- `python scripts/cards.py` rend une planche de démonstration : la regarder avant de produire.
+
+### Variété des plans : les règles anti-doublon
+- Jamais plus de **2 images consécutives de la même famille** (carte, scène, schéma, icône).
+- Jamais **deux compositions identiques** (même cadrage, même objet, personnage à la même place) à moins de 10 images d'écart ; varier l'échelle : plan large, plan moyen, gros plan objet, vue en coupe, vue de dessus, POV.
+- Chaque **analogie** du script a une image métaphorique (la chose comparée), pas une image littérale de la scène.
+- Scènes sombres (`Dark variant`) : jamais plus de 3 de suite, pour que le retour au crème reste un soulagement.
+- Le **Visual director** (`references/agents.md`) audite la shot list avant génération ; il ne faut pas s'auto-auditer.
+
 Le mode diaporama renonce au grain, aux overlays et à la pousse lente des §7.4 à 7.7 ; il garde l'étalonnage et le silence.

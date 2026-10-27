@@ -31,10 +31,14 @@ Pourquoi ça marche : le spectateur **est** le personnage ; les chiffres donnent
 3. **Caler le rythme** : lire `references/reference-beat-sheet.md` (la feuille de rythme de la vidéo cible, minute par minute) et le tableau de la section 2. C'est la jauge : même densité de chiffres, mêmes jours-repères, même alternance scène/fait.
 4. **Écrire le script** avec `references/script-template.md` (mécanique de phrase par scène) et les règles de la section 3.
 5. **Construire le plan visuel** si l'utilisateur veut produire la vidéo : `references/style-et-production.md` (§8.9 pour le mode diaporama, qui est le mode par défaut de la chaîne).
-6. **Générer les images** : un plan par moment (60 à 70 images pour 11 min) par Google Flow en automatique avec `references/flow-automation.md` (scripts dans `scripts/flow/`) ; cartes de chiffres et jours par code. Assembler sur la voix, vérifier sur une planche contact.
+6. **Générer les images** : un plan par moment (60 à 70 images pour 11 min) par Google Flow en automatique avec `references/flow-automation.md` (scripts dans `scripts/flow/`) ; cartes de chiffres et jours par code. Cartes de chiffres et jours par `scripts/cards.py` (icône obligatoire, mises en page en rotation). Shot list auditée par les agents Visual director et Prompt auditor avant génération, planche contact par Image QC après. Assembler sur la voix.
 7. **Livrer** : script complet + shot list + la fiche de publication complète de `references/publication.md` (titre, description avec chapitres calés sur la voix, tags ≤ 500 caractères, **catégorie Éducation** toujours écrite, miniature texte par code). Passer la checklist de la section 4 avant de livrer.
 
 Par défaut, livrer **script + plan de production** ; si l'utilisateur ne veut que le texte, livrer le script seul.
+
+
+## Agents de production
+Le rédacteur seul se répète ; la production passe par des agents spécialisés lancés en parallèle avec l'outil Agent, chacun avec un brief complet (`references/agents.md`) : **Fact-checker** et **Script critic** après le brouillon ; **Visual director** et **Prompt auditor** après la shot list ; **Image QC** (vision) après chaque lot d'images ; **Publication checker** avant livraison. L'orchestrateur applique leurs tableaux de corrections et relance ce qui doit l'être. Ne jamais sauter Visual director et Image QC : ce sont eux qui empêchent les cartes nues, les bulles vides et les doublons.
 
 ## 1. Paramètres à choisir avant d'écrire
 
@@ -122,6 +126,6 @@ Dernière phrase : **une seule phrase courte, concrète, sans explication.** Ell
 - [ ] Dernière phrase courte, sans explication, ouverte sur une suite
 - [ ] Longueur 1 500–1 700 mots (10–12 min)
 - [ ] Fiche de publication complète (§10.0 de `publication.md`) : **catégorie Éducation écrite**, tags ≤ 500 caractères vérifiés, chapitres aux temps réels de la voix, contenu synthétique = oui, commentaire à épingler
-- [ ] Images : planche contact vérifiée (même personnage partout, aucun texte généré dans l'image), miniature 1280 × 720 avec texte par code
+- [ ] Images : planche contact passée par l'agent Image QC (aucune bulle de dialogue, aucun texte généré, même personnage partout), rejets régénérés ; aucune carte de chiffre sans icône ; jamais 3 images de même famille de suite ; miniature 1280 × 720 avec texte par code
 
 Export, publication, erreurs à éviter : `references/publication.md`.

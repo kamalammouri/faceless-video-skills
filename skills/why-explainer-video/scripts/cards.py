@@ -1,0 +1,217 @@
+"""Number cards with hand-drawn icons, cream explainer style. Never ship a bare number in a box: every card gets an icon
+that says what the number is (clock, calendar, fuel, thermometer...), and consecutive cards use different layouts.
+
+  from cards import card
+  card("clock", "3:47", "a.m.").save("c01.png")                      # icon left, number right
+  card("calendar", "240 DAYS", "nothing lands", layout="top")        # icon above the number
+  card("stamp", "DAY 68", "the hum stops")                           # calendar-page stamp
+  card("compare", "10 L SNOW", "1 L WATER", icons=("snow", "water")) # A -> B
+  card("gauge", "412 TABLETS", "of 730", value=0.56, icon="pills")   # number + progress bar
+  python cards.py   -> writes cards_demo.jpg (all icons and layouts) for a visual check
+
+Icons: clock, calendar, fuel, thermo, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart
+"""
+import math, pathlib, sys
+from PIL import Image, ImageDraw, ImageFont
+
+W, H = 1920, 1080
+CREAM, INK, GREY, WHITE = (245, 239, 224), (30, 27, 22), (150, 145, 135), (255, 255, 255)
+SAND, SAGE, BLUE, TERRA, ORANGE, SLATE = (232, 213, 176), (196, 210, 184), (168, 186, 204), (199, 123, 88), (240, 180, 120), (38, 48, 60)
+LW = 7  # ink line width
+
+def font(size, bold=False):
+    for name in (("segoeprb.ttf" if bold else "segoepr.ttf"), "arial.ttf"):
+        try: return ImageFont.truetype("C:/Windows/Fonts/" + name, size)
+        except OSError: pass
+    return ImageFont.load_default()
+
+# ---------- icons: drawn in a box (x, y, s) with s = side ----------
+def _ell(d, x, y, s, fill, k=1.0):
+    m = s * (1 - k) / 2; d.ellipse([x + m, y + m, x + s - m, y + s - m], fill=fill, outline=INK, width=LW)
+
+def ic_clock(d, x, y, s):
+    _ell(d, x, y, s, WHITE); cx, cy = x + s / 2, y + s / 2
+    for a in range(12):
+        r1, r2 = s * 0.40, s * (0.46 if a % 3 else 0.44); t = math.radians(a * 30)
+        d.line([cx + r1 * math.sin(t), cy - r1 * math.cos(t), cx + r2 * math.sin(t), cy - r2 * math.cos(t)], fill=INK, width=4)
+    d.line([cx, cy, cx + s * 0.22 * math.sin(math.radians(105)), cy - s * 0.22 * math.cos(math.radians(105))], fill=INK, width=LW)
+    d.line([cx, cy, cx + s * 0.34 * math.sin(math.radians(282)), cy - s * 0.34 * math.cos(math.radians(282))], fill=TERRA, width=LW)
+    d.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=INK)
+
+def ic_calendar(d, x, y, s):
+    d.rounded_rectangle([x, y + s * 0.12, x + s, y + s], 18, fill=WHITE, outline=INK, width=LW)
+    d.rectangle([x, y + s * 0.12, x + s, y + s * 0.32], fill=TERRA, outline=INK, width=LW)
+    for rx in (0.28, 0.72): d.rounded_rectangle([x + s * rx - 10, y, x + s * rx + 10, y + s * 0.22], 6, fill=INK)
+    for r in range(3):
+        for c in range(4):
+            cx, cy = x + s * (0.2 + c * 0.2), y + s * (0.47 + r * 0.17)
+            d.rectangle([cx - 12, cy - 12, cx + 12, cy + 12], fill=SAND if (r, c) != (1, 2) else TERRA, outline=INK, width=3)
+
+def ic_fuel(d, x, y, s):
+    d.rounded_rectangle([x + s * 0.15, y + s * 0.08, x + s * 0.85, y + s], 24, fill=BLUE, outline=INK, width=LW)
+    for ry in (0.3, 0.55, 0.8): d.line([x + s * 0.15, y + s * ry, x + s * 0.85, y + s * ry], fill=INK, width=4)
+    d.ellipse([x + s * 0.15, y, x + s * 0.85, y + s * 0.18], fill=SAND, outline=INK, width=LW)
+    d.rectangle([x + s * 0.42, y + s * 0.02, x + s * 0.58, y + s * 0.1], fill=INK)
+
+def ic_thermo(d, x, y, s):
+    cx = x + s / 2
+    d.rounded_rectangle([cx - s * 0.11, y, cx + s * 0.11, y + s * 0.72], 40, fill=WHITE, outline=INK, width=LW)
+    d.ellipse([cx - s * 0.2, y + s * 0.6, cx + s * 0.2, y + s], fill=TERRA, outline=INK, width=LW)
+    d.rectangle([cx - s * 0.04, y + s * 0.42, cx + s * 0.04, y + s * 0.72], fill=TERRA)
+    for ry in (0.15, 0.27, 0.39): d.line([cx + s * 0.11, y + s * ry, cx + s * 0.2, y + s * ry], fill=INK, width=4)
+
+def ic_snow(d, x, y, s):
+    cx, cy, r = x + s / 2, y + s / 2, s * 0.42
+    for a in range(0, 360, 60):
+        t = math.radians(a); ex, ey = cx + r * math.cos(t), cy + r * math.sin(t)
+        d.line([cx, cy, ex, ey], fill=BLUE, width=LW)
+        for k in (0.55, 0.78):
+            px, py = cx + r * k * math.cos(t), cy + r * k * math.sin(t)
+            for b in (35, -35):
+                tb = math.radians(a + b); d.line([px, py, px + r * 0.16 * math.cos(tb), py + r * 0.16 * math.sin(tb)], fill=BLUE, width=5)
+    d.ellipse([cx - 10, cy - 10, cx + 10, cy + 10], fill=BLUE)
+
+def ic_water(d, x, y, s):
+    cx = x + s / 2
+    d.polygon([(cx, y), (x + s * 0.18, y + s * 0.6), (cx, y + s * 0.6), (x + s * 0.82, y + s * 0.6)], fill=BLUE, outline=INK)
+    d.ellipse([x + s * 0.18, y + s * 0.36, x + s * 0.82, y + s], fill=BLUE, outline=INK, width=LW)
+    d.line([(cx, y), (x + s * 0.2, y + s * 0.62)], fill=INK, width=LW); d.line([(cx, y), (x + s * 0.8, y + s * 0.62)], fill=INK, width=LW)
+    d.ellipse([x + s * 0.3, y + s * 0.6, x + s * 0.4, y + s * 0.72], fill=WHITE)
+
+def ic_food(d, x, y, s):
+    d.ellipse([x, y + s * 0.3, x + s, y + s * 0.85], fill=WHITE, outline=INK, width=LW)
+    d.ellipse([x + s * 0.12, y + s * 0.38, x + s * 0.88, y + s * 0.77], fill=SAND, outline=INK, width=4)
+    for k in range(3):
+        px = x + s * (0.35 + k * 0.15); d.line([px, y + s * 0.05, px - 10, y + s * 0.3], fill=GREY, width=4)
+
+def ic_pills(d, x, y, s):
+    d.rounded_rectangle([x + s * 0.18, y + s * 0.2, x + s * 0.82, y + s], 26, fill=ORANGE, outline=INK, width=LW)
+    d.rectangle([x + s * 0.12, y, x + s * 0.88, y + s * 0.26], fill=WHITE, outline=INK, width=LW)
+    d.rectangle([x + s * 0.28, y + s * 0.45, x + s * 0.72, y + s * 0.8], fill=WHITE, outline=INK, width=4)
+    d.line([x + s * 0.5, y + s * 0.52, x + s * 0.5, y + s * 0.73], fill=TERRA, width=6); d.line([x + s * 0.38, y + s * 0.625, x + s * 0.62, y + s * 0.625], fill=TERRA, width=6)
+
+def ic_hourglass(d, x, y, s):
+    d.polygon([(x + s * 0.2, y), (x + s * 0.8, y), (x + s * 0.5, y + s * 0.5), (x + s * 0.8, y + s), (x + s * 0.2, y + s), (x + s * 0.5, y + s * 0.5)], fill=WHITE, outline=INK)
+    d.polygon([(x + s * 0.3, y + s * 0.72), (x + s * 0.7, y + s * 0.72), (x + s * 0.78, y + s * 0.96), (x + s * 0.22, y + s * 0.96)], fill=SAND)
+    d.polygon([(x + s * 0.36, y + s * 0.1), (x + s * 0.64, y + s * 0.1), (x + s * 0.5, y + s * 0.4)], fill=SAND)
+    d.line([(x + s * 0.2, y), (x + s * 0.8, y), (x + s * 0.5, y + s * 0.5), (x + s * 0.8, y + s), (x + s * 0.2, y + s), (x + s * 0.5, y + s * 0.5), (x + s * 0.2, y)], fill=INK, width=LW)
+
+def ic_key(d, x, y, s):
+    d.ellipse([x, y + s * 0.25, x + s * 0.5, y + s * 0.75], fill=ORANGE, outline=INK, width=LW)
+    d.ellipse([x + s * 0.15, y + s * 0.4, x + s * 0.35, y + s * 0.6], fill=CREAM, outline=INK, width=4)
+    d.rectangle([x + s * 0.48, y + s * 0.44, x + s, y + s * 0.56], fill=ORANGE, outline=INK, width=5)
+    for px in (0.78, 0.92): d.rectangle([x + s * px, y + s * 0.56, x + s * px + 18, y + s * 0.7], fill=ORANGE, outline=INK, width=4)
+
+def ic_radio(d, x, y, s):
+    d.rounded_rectangle([x, y + s * 0.3, x + s, y + s], 22, fill=SAGE, outline=INK, width=LW)
+    d.ellipse([x + s * 0.12, y + s * 0.45, x + s * 0.5, y + s * 0.85], fill=WHITE, outline=INK, width=5)
+    d.line([x + s * 0.31, y + s * 0.65, x + s * 0.42, y + s * 0.55], fill=TERRA, width=5)
+    for ry in (0.5, 0.62, 0.74): d.line([x + s * 0.6, y + s * ry, x + s * 0.9, y + s * ry], fill=INK, width=4)
+    d.line([x + s * 0.8, y + s * 0.3, x + s * 0.95, y], fill=INK, width=LW); d.ellipse([x + s * 0.72, y + s * 0.36, x + s * 0.78, y + s * 0.42], fill=TERRA)
+
+def ic_fire(d, x, y, s):
+    cx = x + s / 2
+    d.polygon([(cx, y), (x + s * 0.85, y + s * 0.45), (x + s * 0.8, y + s * 0.85), (cx, y + s), (x + s * 0.2, y + s * 0.85), (x + s * 0.15, y + s * 0.45), (x + s * 0.4, y + s * 0.35)], fill=ORANGE, outline=INK)
+    d.line([(cx, y), (x + s * 0.85, y + s * 0.45), (x + s * 0.8, y + s * 0.85), (cx, y + s), (x + s * 0.2, y + s * 0.85), (x + s * 0.15, y + s * 0.45), (x + s * 0.4, y + s * 0.35), (cx, y)], fill=INK, width=LW)
+    d.polygon([(cx, y + s * 0.45), (x + s * 0.65, y + s * 0.75), (cx, y + s * 0.95), (x + s * 0.35, y + s * 0.75)], fill=TERRA)
+
+def ic_plane(d, x, y, s):
+    cy = y + s * 0.5
+    d.polygon([(x, cy), (x + s * 0.85, cy - s * 0.12), (x + s, cy), (x + s * 0.85, cy + s * 0.12)], fill=WHITE, outline=INK)
+    d.polygon([(x + s * 0.35, cy - s * 0.05), (x + s * 0.55, cy - s * 0.45), (x + s * 0.68, cy - s * 0.45), (x + s * 0.55, cy - s * 0.05)], fill=BLUE, outline=INK)
+    d.polygon([(x + s * 0.35, cy + s * 0.05), (x + s * 0.55, cy + s * 0.45), (x + s * 0.68, cy + s * 0.45), (x + s * 0.55, cy + s * 0.05)], fill=BLUE, outline=INK)
+    d.polygon([(x + s * 0.02, cy - s * 0.02), (x + s * 0.1, cy - s * 0.3), (x + s * 0.2, cy - s * 0.3), (x + s * 0.15, cy - s * 0.02)], fill=BLUE, outline=INK)
+    d.line([(x, cy), (x + s * 0.85, cy - s * 0.12), (x + s, cy), (x + s * 0.85, cy + s * 0.12), (x, cy)], fill=INK, width=LW)
+
+def ic_battery(d, x, y, s):
+    d.rounded_rectangle([x, y + s * 0.2, x + s * 0.88, y + s * 0.8], 16, fill=WHITE, outline=INK, width=LW)
+    d.rectangle([x + s * 0.88, y + s * 0.38, x + s, y + s * 0.62], fill=INK)
+    d.rectangle([x + s * 0.06, y + s * 0.27, x + s * 0.3, y + s * 0.73], fill=TERRA)
+
+def ic_wind(d, x, y, s):
+    for k, ry in enumerate((0.25, 0.5, 0.75)):
+        ex = x + s * (0.75 if k == 1 else 0.9); d.line([x, y + s * ry, ex, y + s * ry], fill=BLUE, width=LW)
+        d.arc([ex - s * 0.12, y + s * ry - s * 0.14, ex + s * 0.12, y + s * ry + s * 0.1], 90, 360, fill=BLUE, width=LW)
+
+def ic_sun(d, x, y, s):
+    cx, cy = x + s / 2, y + s / 2; _ell(d, x, y, s, ORANGE, 0.55)
+    for a in range(0, 360, 45):
+        t = math.radians(a); d.line([cx + s * 0.33 * math.cos(t), cy + s * 0.33 * math.sin(t), cx + s * 0.48 * math.cos(t), cy + s * 0.48 * math.sin(t)], fill=INK, width=LW)
+
+def ic_moon(d, x, y, s):
+    _ell(d, x, y, s, SAND, 0.9); d.ellipse([x + s * 0.3, y - s * 0.02, x + s * 1.05, y + s * 0.78], fill=CREAM)
+    d.arc([x + s * 0.05, y + s * 0.05, x + s * 0.95, y + s * 0.95], 40, 320, fill=INK, width=LW)
+
+def ic_heart(d, x, y, s):
+    cx = x + s / 2
+    d.ellipse([x, y, cx + 6, y + s * 0.62], fill=TERRA, outline=INK, width=LW); d.ellipse([cx - 6, y, x + s, y + s * 0.62], fill=TERRA, outline=INK, width=LW)
+    d.polygon([(x + s * 0.03, y + s * 0.42), (x + s * 0.97, y + s * 0.42), (cx, y + s)], fill=TERRA)
+    d.line([(x + s * 0.04, y + s * 0.42), (cx, y + s), (x + s * 0.96, y + s * 0.42)], fill=INK, width=LW)
+    d.ellipse([x + s * 0.2, y + s * 0.3, x + s * 0.8, y + s * 0.5], fill=TERRA)
+
+ICONS = {n[3:]: f for n, f in globals().items() if n.startswith("ic_")}
+
+def draw_icon(d, name, x, y, s):
+    ICONS[name](d, x, y, s)
+
+# ---------- layouts ----------
+def _fit(d, text, maxw, size, bold=True):
+    f = font(size, bold)
+    while d.textlength(text, font=f) > maxw and size > 40: size -= 8; f = font(size, bold)
+    return f
+
+def card(icon, big, small="", layout="left", dark=False, icons=None, value=None, accent=None):
+    """icon: an ICONS key (or 'stamp' / 'compare' / 'gauge' as layout shortcuts). big: the number. small: 2-4 words.
+    layout: 'left' (icon left, number right), 'top' (icon above), 'stamp' (calendar page for DAY n),
+            'compare' (big -> small with two icons), 'gauge' (number + bar, value 0..1)."""
+    if icon in ("stamp", "compare", "gauge"): layout, icon = icon, icon if icon in ICONS else None
+    bg, ink, sub = (SLATE, CREAM, (190, 196, 204)) if dark else (CREAM, INK, GREY)
+    im = Image.new("RGB", (W, H), bg); d = ImageDraw.Draw(im); acc = accent or TERRA
+    if layout == "left":
+        d.rounded_rectangle([200, 260, 1720, 820], 44, fill=WHITE if not dark else (50, 62, 76), outline=ink, width=6)
+        draw_icon(d, icon, 300, 380, 320)
+        f = _fit(d, big, 940, 170); d.text((1120, 500 if small else 540), big, font=f, fill=acc if big[:1].isdigit() and layout == "left" and small == "a.m." else ink, anchor="mm")
+        if small: d.text((1120, 660), small, font=font(52), fill=sub, anchor="mm")
+    elif layout == "top":
+        draw_icon(d, icon, 960 - 130, 150, 260)
+        f = _fit(d, big, 1500, 190); d.text((960, 600), big, font=f, fill=ink, anchor="mm")
+        if small: d.text((960, 760), small, font=font(56), fill=sub, anchor="mm")
+    elif layout == "stamp":
+        x, y, s = 660, 160, 600
+        d.rounded_rectangle([x, y + 70, x + s, y + s + 120], 30, fill=WHITE if not dark else (50, 62, 76), outline=ink, width=8)
+        d.rectangle([x, y + 70, x + s, y + 190], fill=acc, outline=ink, width=8)
+        for rx in (0.25, 0.75): d.rounded_rectangle([x + s * rx - 16, y + 20, x + s * rx + 16, y + 120], 10, fill=ink)
+        word, num = (big.split(" ", 1) + [""])[:2]
+        d.text((x + s / 2, y + 130), word, font=font(60, True), fill=WHITE, anchor="mm")
+        d.text((x + s / 2, y + 440), num, font=_fit(d, num, 520, 230), fill=ink, anchor="mm")
+        if small: d.text((960, 960), small, font=font(56), fill=sub, anchor="mm")
+    elif layout == "compare":
+        a, b = icons or ("snow", "water")
+        for k, (ic, txt, cx) in enumerate(((a, big, 480), (b, small, 1440))):
+            draw_icon(d, ic, cx - 140, 230, 280)
+            d.text((cx, 700), txt, font=_fit(d, txt, 760, 120), fill=ink, anchor="mm")
+        d.text((960, 520), "=", font=font(200, True), fill=acc, anchor="mm")
+        d.polygon([(880, 470), (1040, 520), (880, 570)], fill=bg)  # keep the '=' crisp on cream
+        d.text((960, 520), "=", font=font(200, True), fill=acc, anchor="mm")
+    elif layout == "gauge":
+        if icon: draw_icon(d, icon, 240, 300, 260)
+        f = _fit(d, big, 1100, 170); d.text((1100, 400), big, font=f, fill=ink, anchor="mm")
+        d.rounded_rectangle([240, 620, 1680, 720], 50, fill=WHITE if not dark else (50, 62, 76), outline=ink, width=6)
+        v = max(0.0, min(1.0, value or 0)); d.rounded_rectangle([246, 626, 246 + int(1428 * v), 714], 44, fill=acc)
+        if small: d.text((960, 820), small, font=font(56), fill=sub, anchor="mm")
+    return im
+
+if __name__ == "__main__":
+    demo = [("clock", "3:47", "a.m.", "left", {}), ("calendar", "240 DAYS", "nothing lands", "top", {}),
+            ("fuel", "14,000 L", "arctic diesel", "left", {}), ("thermo", "-58 °C", "tonight", "top", {}),
+            ("stamp", "DAY 68", "the hum stops", "stamp", {}), ("compare", "10 L SNOW", "1 L WATER", "compare", {"icons": ("snow", "water")}),
+            ("gauge", "412 TABLETS", "of 730", "gauge", {"value": 0.56, "icon": "pills"}), ("hourglass", "2 H 40", "before the pipes freeze", "left", {}),
+            ("key", "HEAT IS THE KEY", "", "top", {}), ("radio", "291", "days of silence", "left", {}),
+            ("fire", "DAY 248", "the smoke", "top", {"dark": True}), ("plane", "DAY 365", "wheels down", "left", {}),
+            ("battery", "4,100 L", "left in the tank", "gauge", {"value": 0.29, "icon": "battery"}), ("wind", "91 KNOTS", "and climbing", "top", {}),
+            ("sun", "146 DAYS", "of darkness", "left", {"icon": "moon"}), ("heart", "2,200 KCAL", "a day", "left", {"icon": "food"})]
+    sheet = Image.new("RGB", (480 * 4, 270 * 4), "white")
+    for i, (ic, big, small, lay, kw) in enumerate(demo):
+        kw = dict(kw); ic = kw.pop("icon", ic)
+        im = card(ic, big, small, layout=lay, **kw).resize((480, 270)); sheet.paste(im, ((i % 4) * 480, (i // 4) * 270))
+    out = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "cards_demo.jpg"); sheet.save(out, quality=85); print(out)
