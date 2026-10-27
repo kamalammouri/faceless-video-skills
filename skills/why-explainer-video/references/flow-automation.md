@@ -6,6 +6,7 @@ Google Flow n'a pas d'API. Ce qui marche, mesuré sur un lot de 65 images (27 mi
 
 - Node 18+ et le paquet `playwright` installé quelque part (`npm i playwright` dans un dossier) ; indiquer ce dossier par la variable `PLAYWRIGHT_DIR` si ce n'est pas celui du script. Chrome déjà installé suffit (`channel: 'chrome'`).
 - Un compte Google avec Flow actif (plan AI Pro ou Ultra : les crédits Flow limitent le nombre d'images par mois).
+- Le MCP **Chrome DevTools** rattaché au même Chrome (`claude mcp add --scope user chrome-devtools -- npx -y chrome-devtools-mcp@latest --browserUrl http://127.0.0.1:9222`) permet de voir la page Flow, les tuiles et les images produites sans script (capture d'écran, lecture du DOM) ; il n'est chargé qu'au démarrage d'une session, et Chrome doit déjà écouter sur 9222 (`browser.mjs`).
 - Le MCP Playwright, s'il est configuré, sert pour les étapes interactives (ouvrir le projet, régler le format, vérifier une image) ; pour un lot, utiliser les scripts : le MCP ne récupère pas les octets d'une image et relancerait un appel par image.
 
 ## Procédure

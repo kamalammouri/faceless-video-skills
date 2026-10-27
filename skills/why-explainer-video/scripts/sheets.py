@@ -3,7 +3,7 @@ import sys, pathlib, json
 from PIL import Image, ImageDraw, ImageFont
 src, out = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]); out.mkdir(exist_ok=True)
 cols, rows = 4, 3; W, H = 480, 270
-files = sorted(src.glob("F*.jpg")) + sorted(src.glob("F*.png"))
+files = sorted(src.glob("*.jpg")) + sorted(src.glob("*.png"))
 f = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 30)
 for n in range(0, len(files), cols*rows):
     chunk = files[n:n+cols*rows]
