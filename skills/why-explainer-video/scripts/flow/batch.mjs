@@ -2,7 +2,7 @@
 //   PACE=45000 node scripts/flow/batch.mjs prompts.json flow/<video>
 // prompts.json = [{"file": "F001", "prompt": "..."}, ...]. A file already present in the output folder is skipped.
 // Env: PACE (ms pause after each image, 45000 keeps under Flow's "unusual activity" detector; 12000 got blocked after ~30 images),
-//      WAIT (ms max per image, 150000), MAXFAIL (consecutive failure cards before the run stops, 3). Output: <out>/<file>.jpg (or .png/.webp).
+//      WAIT (ms max per image, 150000), MAXFAIL (consecutive failure cards before the run stops, 3; 99 = keep retrying all evening). Output: <out>/<file>.jpg (or .png/.webp).
 // Flow UI (flow.google.com, October 2026): prompt bar at the bottom with the textbox "Que voulez-vous créer ?", the "Agent"
 // toggle OFF (direct mode), the settings trigger set to Image · 16:9 · x1. Results are `group`s in a virtual-scrolled list, NEWEST
 // FIRST: a fresh tile carries the full prompt as its accessible name, then Flow replaces it with a short caption (so never rely on
@@ -26,7 +26,7 @@ const { page } = await attach(); page.setDefaultTimeout(15_000);
 const box = () => page.getByRole('textbox', { name: /Que voulez-vous créer|What do you want to create/i }).first();
 const genButton = () => page.getByRole('button', { name: /Lancer la génération|^Generate$|Générer/i }).first();
 const groups = () => page.locator('main [role="group"]');
-const failCount = () => groups().filter({ hasText: /^\s*(Échec|Failed)/ }).count();
+const failCount = () => groups().filter({ hasText: /Échec|Failed/ }).count();  // card text starts with the icon name "warning", so no anchor
 const bigImages = () => page.evaluate(() => [...document.querySelectorAll('main img')].filter(i => i.naturalWidth >= 512).map(i => i.src));
 const scrollTop = () => page.evaluate(() => { const c = document.querySelector('.cdk-virtual-scrollable'); if (c) c.scrollTop = 0; });
 
