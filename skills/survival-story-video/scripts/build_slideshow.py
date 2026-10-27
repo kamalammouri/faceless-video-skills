@@ -10,6 +10,8 @@ shots.json  = the same list as for prompts.py, one entry per shot, in order:
   {"i": 2, "sentence": "...", "family": "card",  "card": {"icon": "clock", "big": "3:47", "small": "a.m.", "layout": "left"}}
   {"i": 3, "sentence": "...", "family": "chart", "chart": {"fn": "bar_ratio", "args": ["100x", "ROOM AIR", "5% CO2"]}}
   {"i": 4, "sentence": "...", "family": "title", "title": "THE HIDDEN COST"}
+  {"i": 5, "sentence": "...", "family": "html",  "html": {"type": "symbol", "icon": "check", "caption": "verified"}}   -> flow/<dir>/html/H0005.png
+      (hand-drawn inserts drawn in a browser by the hand-drawn-visuals skill: run its render.mjs with --shots before building)
   optional on any shot: "start": seconds (overrides timing), "day": "DAY 68" (corner label), "dark": true (cards/charts dark variant)
 timing.json = either {"chars": "...", "end": [t0, t1, ...]} (ElevenLabs with-timestamps, per character)
               or a list of sentence start times [0.0, 4.2, ...] (one per shot)
@@ -81,6 +83,9 @@ def render(s, flow_dir):
         return cards.card(c.pop("icon"), c.pop("big"), c.pop("small", ""), dark=s.get("dark", False), **c)
     if fam == "chart": c = s["chart"]; return getattr(charts, c["fn"])(*c.get("args", []), **c.get("kwargs", {}))
     if fam == "title": return title_card(s["title"], s.get("dark", False))
+    if fam == "html":                                  # rendered beforehand by the hand-drawn-visuals skill: node render.mjs shots.json flow/<dir>/html --shots
+        f = flow_dir / "html" / f"H{s['i']:04d}.png"
+        return Image.open(f).convert("RGB").resize((W, H)) if f.exists() else None
     for ext in (".png", ".jpg", ".webp"):
         f = flow_dir / f"{s.get('file') or f'F{s['i']:03d}'}{ext}"
         if f.exists(): return Image.open(f).convert("RGB").resize((W, H))
@@ -104,7 +109,7 @@ def main():
     fr = pathlib.Path("build_slideshow/frames"); fr.mkdir(parents=True, exist_ok=True); missing, lines, moving = [], [], 0
     enc = ["-c:v", "libx264", "-preset", "fast", "-crf", "20"]
     for k, s in enumerate(shots):
-        im = render(s, flow_dir); is_flow = s["family"] not in ("card", "chart", "title")
+        im = render(s, flow_dir); is_flow = s["family"] not in ("card", "chart", "title", "html")
         if im is None: missing.append(s.get("file") or s["i"]); im = fallback(s["sentence"]); is_flow = False
         else: im = overlay(im, s["sentence"], s.get("day"), caption)
         p = fr / f"f{k:04d}.png"; im.save(p, compress_level=1); d = max(ends[k] - starts[k], 0.4)

@@ -1,0 +1,18 @@
+[
+ {"file": "D01_symbol", "type": "symbol", "icon": "check", "caption": "verified", "colour": "sage"},
+ {"file": "D02_symbol_dark", "type": "symbol", "icon": "gift", "caption": "a present", "colour": "terra", "dark": true},
+ {"file": "D03_card", "type": "card", "icon": "clock", "big": "3:47", "small": "a.m.", "colour": "blue"},
+ {"file": "D04_card_top", "type": "card", "icon": "calendar-days", "big": "240 DAYS", "small": "nothing lands", "layout": "top", "colour": "terra"},
+ {"file": "D05_compare", "type": "compare", "left": "10 L SNOW", "right": "1 L WATER", "icon_left": "snowflake", "icon_right": "droplet"},
+ {"file": "D06_gauge", "type": "gauge", "icon": "pill", "big": "412 TABLETS", "small": "of 730", "value": 0.56},
+ {"file": "D07_scoreboard", "type": "scoreboard", "left": "21", "right": "0", "left_name": "YOU", "right_name": "THEM", "dark": true},
+ {"file": "D08_phone", "type": "phone", "title": "MOM", "lines": ["3 missed calls"], "dark": true},
+ {"file": "D09_title", "type": "title", "title": "THE HIDDEN COST OF A VISIBLE FACE", "sub": "chapter three"},
+ {"file": "D10_bar", "type": "bar", "title": "Reaction time (seconds)", "labels": ["average", "sprinter", "you"], "values": [0.25, 0.13, 0.025]},
+ {"file": "D11_line", "type": "line", "title": "Followers", "labels": ["age 11", "12", "13", "14"], "series": [{"label": "The Boy Who Knows", "data": [0, 9, 40, 120]}]},
+ {"file": "D12_pie", "type": "pie", "title": "How the day goes", "labels": ["sleep", "school", "practice", "free"], "values": [8, 7, 5, 4]},
+ {"file": "D13_timeline", "type": "timeline", "title": "The blush, from Darwin to the scanner", "start": "1872", "end": "2024", "marks": [{"at": 0.0, "label": "Darwin"}, {"at": 0.72, "label": "Mellander 1982", "colour": "blue"}, {"at": 0.95, "label": "Ioannou 2017", "colour": "sage"}, {"at": 1.0, "label": "Nikolic 2024"}]},
+ {"file": "D14_list", "type": "list", "title": "The price", "items": [{"icon": "brain", "text": "headaches", "colour": "terra"}, {"icon": "utensils", "text": "endless hunger", "colour": "orange"}, {"icon": "hourglass", "text": "the world feels slow", "colour": "blue"}]},
+ {"file": "D15_symbol_loop", "type": "symbol", "icon": "refresh-cw", "caption": "back to square one", "colour": "sand", "dark": true},
+ {"file": "D16_bar_dark", "type": "bar", "title": "IQ", "labels": ["most people", "rare", "test limit", "you"], "values": [100, 140, 160, 500], "dark": true}
+]

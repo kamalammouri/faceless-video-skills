@@ -1,12 +1,13 @@
 # Faceless Video Skills
 
-Three Claude skills for producing faceless YouTube videos end to end: script, image list, automatic image generation in Google Flow, slideshow assembly on an AI voice, thumbnail and a complete publication sheet.
+Four Claude skills for producing faceless YouTube videos end to end: script, image list, automatic image generation in Google Flow, slideshow assembly on an AI voice, thumbnail and a complete publication sheet.
 
 | Skill | Format | Length | Reference channel |
 |---|---|---|---|
 | `why-explainer-video` | "Why Evolution Made…" science explainer: a human paradox opened by a second-person scene, resolved by named studies, reframed as a trade-off | 20 min, 3,300–3,600 words | Apefully |
 | `survival-story-video` | Second-person survival story, day by day, with real technical facts and an open ending | 10–12 min, 1,500–1,700 words | "Bunker Survival 1 Year" |
 | `what-if-story-video` | "What If You…" second-person fiction: a power with a number, its physical limit, a plus/minus escalation, a moral dilemma (save rather than win), a cliffhanger; 3-part series plus a full movie; slow narrator plus character voices | 6–9 min, 650–1,000 words, 100 wpm | Ifverse Tales |
+| `hand-drawn-visuals` | Inserts drawn by code in a real browser (rough.js sketchy shapes, Lucide icons, handwriting fonts, Playwright capture): symbols, number cards, comparisons, gauges, scoreboards, phone screens, titles, bar/line/pie charts, timelines, lists | used by the three video skills for every non-scene shot | matches the Flow storybook look |
 
 All three skills start with a two-round brief that asks the user for the character style, the scenario (three angles proposed by a Story architect agent) and the main parameters, then share the same production method: one static image per moment (no animation), a recurring character in the chosen style, numbers and charts rendered by code, images generated in Google Flow through a Playwright-driven Chrome, assembly with ffmpeg on the voice timing.
 
@@ -21,6 +22,7 @@ git clone https://github.com/kamalammouri/faceless-video-skills
 cp -r faceless-video-skills/skills/why-explainer-video ~/.claude/skills/
 cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
 cp -r faceless-video-skills/skills/what-if-story-video ~/.claude/skills/
+cp -r faceless-video-skills/skills/hand-drawn-visuals ~/.claude/skills/
 ```
 
 **claude.ai / Claude desktop**: zip a skill folder (the folder itself as the root of the archive) and upload it in Settings → Skills.
@@ -93,6 +95,17 @@ It loads at the next session start and needs `browser.mjs` running (port 9222). 
 - `scripts/cards.py`: `scoreboard("21", "0", "YOU", "THEM")` and `phone("MOM", ["3 missed calls"])`, used from `shots.json` with `{"card": {"fn": "scoreboard", "args": [...]}}`.
 - `scripts/styles.json`: the `stickman-dark` style (black silhouette, white eyes with a star glint, coloured hoodie, dusk sets) with its thumbnail template; `scripts/thumb.py` adds the two yellow words and the red "PART n" badge.
 - `references/`: the 8-beat story template with word budgets, a premise bank (power, limit, dilemma), the visual style, the publication sheet (title, thumbnail, description with science notes and part links), adapted Story architect and Script critic briefs.
+
+## Hand-drawn inserts by code (hand-drawn-visuals)
+
+Symbols, numbers, scores, charts and timelines should never be asked to the image generator: it writes wrong digits, and a check mark or a gift box costs a Flow credit and 45 seconds. `hand-drawn-visuals` draws them in a browser from a JSON spec and screenshots them at 1920×1080:
+
+```bash
+PLAYWRIGHT_DIR=~/Desktop/nastro node skills/hand-drawn-visuals/scripts/render.mjs --demo out/   # 16 examples
+node skills/hand-drawn-visuals/scripts/render.mjs shots.json flow/my-video/html --shots            # every shot with an "html" key
+```
+
+Shapes and hachures by [rough.js](https://roughjs.com) (MIT), icons from [Lucide](https://lucide.dev) (ISC, 1,600+ names, cached locally), Patrick Hand / Caveat fonts, optional Flow-generated backgrounds (`BG`, `BG_DARK`) so inserts share the paper and light of the scenes. The video skills' `build_slideshow.py` loads the PNGs for `family: "html"` shots; their `prompts.py` lint refuses a Flow prompt that is just a simple symbol, and the **Render router** agent decides code vs Flow shot by shot. `cards.py` / `charts.py` (Pillow) remain as a fallback without a browser.
 
 ## Number cards with icons (no bare numbers)
 

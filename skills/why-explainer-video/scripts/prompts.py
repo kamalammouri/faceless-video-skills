@@ -15,7 +15,8 @@ Never edit a prompt by hand: the full prefix + character sheet must be in EVERY 
 
 shots.json = [ {"i": 1, "sentence": "...", "family": "scene", "scene": "the character stands at a frosted window, back to viewer",
                 "composition": "wide", "dark": false, "file": "F01"}, ... ]
-  family: scene | icon | schema | metaphor | map | card | chart | title      (card/chart/title are rendered by code: no prompt)
+  family: scene | icon | schema | metaphor | map | card | chart | title | html   (card/chart/title/html are rendered by code: no prompt;
+          html = a hand-drawn insert spec for the hand-drawn-visuals skill, the best-looking option for symbols, numbers, charts, timelines)
   composition (optional, rotated automatically if missing): wide | medium | close | cutaway | overhead | pov
   nochar: true  -> the recurring character sheet is not added (a scene with other people only)
   withchar: true -> adds the character sheet to a metaphor (by default only scenes carry it)
@@ -55,7 +56,7 @@ FAMILY_TEMPLATE = {
 }
 BANNED = ["talking", "talks", "calling", "says", "saying", "speaks", "speaking", "conversation", "sign ", "signs", "label", "poster", "screen showing",
           "reads ", "written", "writing", "text", "clock showing", "gauge reading", "number", "digits", "letters", "caption", "subtitle"]
-DATA = {"card", "chart", "map"}; INSERT = {"icon", "schema", "metaphor", "map", "card", "chart", "title"}
+DATA = {"card", "chart", "map", "html"}; INSERT = {"icon", "schema", "metaphor", "map", "card", "chart", "title", "html"}
 # Simple symbols Flow should never be asked for: cards.symbol(icon) draws them exactly, instantly, with no credits.
 CODE_ICONS = {"check mark": "check", "checkmark": "check", "tick": "check", "cross mark": "cross", "crossed out": "cross", "red cross": "cross",
               "question mark": "question", "exclamation": "exclamation", "arrow bent": "arrow_loop", "looping arrow": "arrow_loop", "arrow in a loop": "arrow_loop",

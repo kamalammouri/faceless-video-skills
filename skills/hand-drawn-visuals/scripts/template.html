@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>hand-drawn inserts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<style>
+  :root {
+    --cream: #f5efe0; --card: #faf6ec; --ink: #1e1b16; --grey: #96918a; --sand: #e8d5b0; --sage: #c4d2b8; --blue: #a8bacc;
+    --terra: #c77b58; --orange: #f0b478; --slate: #26303c; --slate-card: #323e4c; --light: #e1dccd;
+    --font: 'Patrick Hand', 'Segoe Print', 'Comic Sans MS', cursive; --font-num: 'Caveat', 'Segoe Print', cursive;
+  }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; }
+  body { background: var(--cream); color: var(--ink); font-family: var(--font); position: relative; }
+  body.dark { background: var(--slate); color: var(--cream); }
+  #bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
+  #stage { position: absolute; inset: 0; }
+  svg.layer { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+  .abs { position: absolute; }
+  .num { font-family: var(--font-num); font-weight: 700; line-height: 1; }
+  .cap { color: var(--grey); } body.dark .cap { color: #bec4cc; }
+  .center { left: 0; width: 1920px; text-align: center; }
+  .chart-box { position: absolute; }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="stage"></div>
+<script>
+const $ = (tag, attrs = {}, parent = stage) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'style') e.style.cssText = v; else if (k === 'text') e.textContent = v; else if (k === 'html') e.innerHTML = v; else e.setAttribute(k, v); } parent.appendChild(e); return e; };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const COL = { sage: '--sage', blue: '--blue', terra: '--terra', orange: '--orange', sand: '--sand', ink: '--ink', grey: '--grey' };
+const col = c => (c && COL[c]) ? css(COL[c]) : (c || css('--terra'));
+let stage, dark, rc, svg;
+
+function layer() {
+  svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'layer'); svg.setAttribute('viewBox', '0 0 1920 1080'); stage.appendChild(svg);
+  rc = rough.svg(svg, { options: { roughness: 1.4, bowing: 1.2, strokeWidth: 4, stroke: css(dark ? '--cream' : '--ink') } });
+  return svg;
+}
+const add = node => { svg.appendChild(node); return node; };
+const ink = () => css(dark ? '--cream' : '--ink');
+const cardFill = () => css(dark ? '--slate-card' : '--card');
+
+// A Lucide icon (24x24 stroke paths) redrawn sketchy with rough.js at (x, y, size), stroke in `colour`, optional pale fill
+function sketchIcon(svgText, x, y, size, colour, fill) {
+  if (!svgText) return;
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml').documentElement;
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const k = size / 24; g.setAttribute('transform', `translate(${x} ${y}) scale(${k})`);
+  const o = { stroke: colour || ink(), strokeWidth: Math.max(6, size / 30) / k, roughness: 0.8, bowing: 0.7,
+              fill: fill || (size >= 200 ? (colour || ink()) : 'none'), fillStyle: 'hachure', hachureGap: 1.4, fillWeight: 0.7 / k * 2, hachureAngle: -40 };
+  for (const el of doc.querySelectorAll('path, circle, line, polyline, polygon, rect, ellipse')) {
+    const t = el.tagName, a = n => parseFloat(el.getAttribute(n));
+    let node = null;
+    if (t === 'path') node = rc.path(el.getAttribute('d'), o);
+    else if (t === 'circle') node = rc.circle(a('cx'), a('cy'), a('r') * 2, o);
+    else if (t === 'ellipse') node = rc.ellipse(a('cx'), a('cy'), a('rx') * 2, a('ry') * 2, o);
+    else if (t === 'line') node = rc.line(a('x1'), a('y1'), a('x2'), a('y2'), o);
+    else if (t === 'rect') node = rc.rectangle(a('x'), a('y'), a('width'), a('height'), o);
+    else { const pts = el.getAttribute('points').trim().split(/\s+/).map(p => p.split(',').map(Number)); node = t === 'polygon' ? rc.polygon(pts, o) : rc.linearPath(pts, o); }
+    if (node) g.appendChild(node);
+  }
+  svg.appendChild(g);
+}
+const text = (t, x, y, size, cls = '', style = '') => $('div', { class: `abs ${cls}`, style: `left:${x}px; top:${y}px; font-size:${size}px; ${style}`, text: t });
+const ctext = (t, y, size, cls = '', style = '') => $('div', { class: `abs center ${cls}`, style: `top:${y}px; font-size:${size}px; ${style}`, text: t });
+const panel = (x, y, w, h, fill) => add(rc.rectangle(x, y, w, h, { fill: fill || cardFill(), fillStyle: 'solid', roughness: 1.2, strokeWidth: 4 }));
+
+const T = {
+  // one big icon, optional caption: {"type":"symbol","icon":"check","caption":"verified","colour":"sage"}
+  symbol(s) { layer(); sketchIcon(s.icon_svg, 960 - 240, s.caption ? 200 : 280, 480, col(s.colour), s.fill ? col(s.fill) : null); if (s.caption) ctext(s.caption, 820, 72, 'cap'); },
+  // icon + big number + small words: {"type":"card","icon":"clock","big":"3:47","small":"a.m.","layout":"left|top"}
+  card(s) {
+    layer();
+    if (s.layout === 'top') { sketchIcon(s.icon_svg, 960 - 140, 120, 280, col(s.colour)); ctext(s.big, 470, 230, 'num'); if (s.small) ctext(s.small, 760, 64, 'cap'); return; }
+    panel(200, 250, 1520, 580); sketchIcon(s.icon_svg, 300, 370, 330, col(s.colour));
+    text(s.big, 720, 380, 220, 'num', 'width:900px; text-align:center'); if (s.small) text(s.small, 720, 650, 64, 'cap', 'width:900px; text-align:center');
+  },
+  // two values side by side with icons: {"type":"compare","left":"10 L SNOW","right":"1 L WATER","icon_left":"snowflake","icon_right":"droplet","sign":"="}
+  compare(s) {
+    layer();
+    sketchIcon(s.icon_left_svg, 480 - 150, 200, 300, col(s.colour || 'blue')); sketchIcon(s.icon_right_svg, 1440 - 150, 200, 300, col(s.colour2 || 'terra'));
+    text(s.left, 80, 620, 110, 'num', 'width:800px; text-align:center'); text(s.right, 1040, 620, 110, 'num', 'width:800px; text-align:center');
+    ctext(s.sign || '=', 300, 200, 'num', `color:${col('terra')}`);
+  },
+  // number with a progress bar: {"type":"gauge","icon":"pill","big":"412 TABLETS","small":"of 730","value":0.56}
+  gauge(s) {
+    layer(); if (s.icon_svg) sketchIcon(s.icon_svg, 240, 300, 260, col(s.colour));
+    text(s.big, 560, 330, 170, 'num', 'width:1120px; text-align:center');
+    add(rc.rectangle(240, 640, 1440, 100, { fill: cardFill(), fillStyle: 'solid', strokeWidth: 4 }));
+    add(rc.rectangle(246, 646, Math.max(20, 1428 * Math.min(1, Math.max(0, s.value || 0))), 88, { fill: col(s.colour || 'terra'), fillStyle: 'solid', stroke: 'none', roughness: 1.6 }));
+    if (s.small) ctext(s.small, 800, 60, 'cap');
+  },
+  // flip-board score: {"type":"scoreboard","left":"21","right":"0","left_name":"YOU","right_name":"THEM"}
+  scoreboard(s) {
+    layer();
+    [[s.left, s.left_name, 640, true], [s.right, s.right_name, 1280, false]].forEach(([n, name, cx, acc]) => {
+      add(rc.rectangle(cx - 260, 300, 520, 460, { fill: '#1c1e22', fillStyle: 'solid', stroke: ink(), strokeWidth: 5 }));
+      add(rc.line(cx - 260, 530, cx + 260, 530, { stroke: css('--cream'), strokeWidth: 3 }));
+      text(n, cx - 260, 360, 300, 'num', `width:520px; text-align:center; color:${acc ? col('terra') : css('--cream')}`);
+      if (name) text(name, cx - 260, 820, 64, '', 'width:520px; text-align:center');
+    });
+    ctext(':', 420, 220, 'num');
+  },
+  // phone screen: {"type":"phone","title":"MOM","lines":["3 missed calls"]}
+  phone(s) {
+    layer();
+    add(rc.rectangle(700, 90, 520, 900, { fill: '#1c1e22', fillStyle: 'solid', strokeWidth: 5, stroke: ink() }));
+    add(rc.rectangle(724, 114, 472, 852, { fill: dark ? '#eef0f3' : '#ffffff', fillStyle: 'solid', strokeWidth: 2 }));
+    text(s.title, 724, 250, 72, 'num', 'width:472px; text-align:center; color:#1e1b16');
+    (s.lines || []).slice(0, 4).forEach((t, k, arr) => {
+      const last = k === arr.length - 1 && arr.length > 1;
+      add(rc.rectangle(770, 400 + k * 130, 380, 100, { fill: last ? col('terra') : '#dfe3e7', fillStyle: 'solid', strokeWidth: 2, stroke: '#1e1b16' }));
+      text(t, 770, 418 + k * 130, 48, '', `width:380px; text-align:center; color:${last ? '#fff' : '#1e1b16'}`);
+    });
+  },
+  // chapter title: {"type":"title","title":"THE HIDDEN COST","sub":"chapter three"}
+  title(s) {
+    layer(); add(rc.line(560, 640, 1360, 640, { stroke: col('terra'), strokeWidth: 6, roughness: 2 }));
+    ctext(s.title, 380, s.title.length > 22 ? 110 : 150, 'num'); if (s.sub) ctext(s.sub, 680, 64, 'cap');
+  },
+  // sketchy charts drawn with rough.js: {"type":"bar","title":"...","labels":["A","B"],"values":[3,7],"unit":"s"} (up to 7 bars)
+  bar(s) {
+    layer(); const n = s.values.length, top = s.title ? 230 : 150, base = 860, max = Math.max(...s.values) || 1;
+    if (s.title) ctext(s.title, 80, 96, 'num');
+    add(rc.line(220, base, 1700, base, { strokeWidth: 5, roughness: 1.3 }));
+    const w = Math.min(220, 1300 / n), gap = (1480 - n * w) / (n + 1);
+    s.values.forEach((v, i) => {
+      const x = 220 + gap + i * (w + gap), h = Math.max(12, (base - top) * v / max);
+      add(rc.rectangle(x, base - h, w, h, { fill: PALETTE[i % PALETTE.length], fillStyle: 'hachure', hachureGap: 7, fillWeight: 3, strokeWidth: 4, roughness: 1.3 }));
+      text(String(s.units ? s.units[i] : v) + (s.unit || ''), x - 60, base - h - 90, 72, 'num', `width:${w + 120}px; text-align:center`);
+      text(s.labels[i], x - 80, base + 20, 54, '', `width:${w + 160}px; text-align:center`);
+    });
+  },
+  // {"type":"line","title":"...","labels":["week 1",...],"series":[{"label":"A","data":[1,2,3]},{"label":"B","data":[...]}]} (1 to 3 series)
+  line(s) {
+    layer(); const series = s.series || [{ label: '', data: s.values }], top = s.title ? 230 : 150, base = 860, left = 300, right = 1740;
+    const max = Math.max(...series.flatMap(q => q.data)) || 1, n = s.labels.length;
+    if (s.title) ctext(s.title, 80, 96, 'num');
+    add(rc.line(left, base, right, base, { strokeWidth: 5 })); add(rc.line(left, base, left, top - 40, { strokeWidth: 5 }));
+    const X = i => left + (right - left - 60) * i / Math.max(1, n - 1) + 30, Y = v => base - (base - top) * v / max;
+    s.labels.forEach((l, i) => text(l, X(i) - 150, base + 20, 50, '', 'width:300px; text-align:center'));
+    series.forEach((q, k) => {
+      const pts = q.data.map((v, i) => [X(i), Y(v)]);
+      add(rc.curve(pts, { stroke: PALETTE[k % PALETTE.length], strokeWidth: 7, roughness: 1.2 }));
+      pts.forEach(([x, y]) => add(rc.circle(x, y, 22, { fill: PALETTE[k % PALETTE.length], fillStyle: 'solid', strokeWidth: 3 })));
+      if (q.label) text(q.label, pts[pts.length - 1][0] - 420, pts[pts.length - 1][1] - 90, 54, '', `width:400px; text-align:right; color:${PALETTE[k % PALETTE.length]}`);
+    });
+    text(String(max) + (s.unit || ''), left - 180, top - 30, 48, 'cap', 'width:160px; text-align:right'); text('0', left - 180, base - 30, 48, 'cap', 'width:160px; text-align:right');
+  },
+  // {"type":"pie","title":"...","labels":["sleep","school"],"values":[8,7],"donut":true}
+  pie(s) {
+    layer(); if (s.title) ctext(s.title, 80, 96, 'num');
+    const cx = 720, cy = s.title ? 600 : 540, R = 330, tot = s.values.reduce((a, b) => a + b, 0) || 1; let a0 = -Math.PI / 2;
+    s.values.forEach((v, i) => {
+      const a1 = a0 + 2 * Math.PI * v / tot, pts = [[cx, cy]];
+      for (let t = a0; t <= a1 + 1e-6; t += 0.05) pts.push([cx + R * Math.cos(t), cy + R * Math.sin(t)]);
+      pts.push([cx + R * Math.cos(a1), cy + R * Math.sin(a1)]);
+      add(rc.polygon(pts, { fill: PALETTE[i % PALETTE.length], fillStyle: 'hachure', hachureGap: 7, fillWeight: 3, strokeWidth: 4, roughness: 1 }));
+      const am = (a0 + a1) / 2, lx = 1180, ly = (s.title ? 330 : 260) + i * 110;
+      add(rc.rectangle(lx, ly, 70, 70, { fill: PALETTE[i % PALETTE.length], fillStyle: 'solid', strokeWidth: 3 }));
+      text(`${s.labels[i]}  ${Math.round(100 * v / tot)}%`, lx + 100, ly - 2, 64);
+      a0 = a1;
+    });
+    if (s.donut) add(rc.circle(cx, cy, R * 0.9, { fill: dark ? css('--slate') : css('--cream'), fillStyle: 'solid', strokeWidth: 4 }));
+  },
+  // timeline with marks: {"type":"timeline","start":"1872","end":"2024","marks":[{"at":0.1,"label":"Darwin"},...]}
+  timeline(s) {
+    layer(); add(rc.line(200, 560, 1720, 560, { strokeWidth: 6, roughness: 1.6 }));
+    add(rc.polygon([[1720, 545], [1760, 560], [1720, 575]], { fill: ink(), fillStyle: 'solid' }));
+    text(s.start, 200, 640, 64, 'num'); text(s.end, 1560, 640, 64, 'num', 'width:200px; text-align:right');
+    (s.marks || []).forEach((m, k) => {
+      const x = 260 + 1400 * m.at; add(rc.circle(x, 560, 34, { fill: col(m.colour || 'terra'), fillStyle: 'solid', strokeWidth: 3 }));
+      const y = k % 2 ? 380 : 460; add(rc.line(x, 540, x, y + 70, { strokeWidth: 2, roughness: 0.6 }));
+      text(m.label, x - 200, y, 52, '', 'width:400px; text-align:center');
+    });
+    if (s.title) ctext(s.title, 200, 90, 'num');
+  },
+  // rows of items with icons: {"type":"list","title":"...","items":[{"icon":"check","text":"..."},...]}
+  list(s) {
+    layer(); if (s.title) ctext(s.title, 110, 96, 'num');
+    (s.items || []).slice(0, 5).forEach((it, k) => { const y = (s.title ? 300 : 200) + k * 150; sketchIcon(it.icon_svg, 420, y, 100, col(it.colour)); text(it.text, 560, y + 10, 72); });
+  },
+};
+
+let PALETTE = [];
+
+window.render = function (spec, env = {}) {
+  dark = !!spec.dark; document.body.className = dark ? 'dark' : '';
+  if (env.font) document.documentElement.style.setProperty('--font', env.font);
+  const bg = dark ? env.bgDark : env.bg;
+  document.getElementById('bg').style.backgroundImage = bg ? `url("${bg}")` : 'none';
+  const old = document.getElementById('stage'); stage = document.createElement('div'); stage.id = 'stage'; old.replaceWith(stage);
+  PALETTE = [col('terra'), col('blue'), col('sage'), col('orange'), col('sand'), col('grey')];
+  if (!T[spec.type]) throw new Error(`unknown type "${spec.type}" (known: ${Object.keys(T).join(', ')})`);
+  T[spec.type](spec);
+  return true;
+};
+</script>
+</body>
+</html>
