@@ -74,10 +74,10 @@ def bars(items, ref=None, ylabel="", bg=CREAM):
     im, d, _ = canvas(bg); n = len(items); vmax = max(v for _, v, _ in items) * 1.25
     x0, x1, y0, y1 = 420, 1500, 760, 260; bw = (x1 - x0) / (n * 2)
     for i, (lab, v, col) in enumerate(items):
-        cx = x0 + bw * (2 * i + 1); h = (y0 - y1) * v / vmax
+        col = tuple(col); cx = x0 + bw * (2 * i + 1); h = (y0 - y1) * v / vmax
         d.rounded_rectangle([cx - bw * 0.42, y0 - h, cx + bw * 0.42, y0], 14, fill=col, outline=INK, width=4)
         d.text((cx, y0 + 50), lab, font=font(38), fill=INK, anchor="mm")
-        d.text((cx, y0 - h - 36), f"{v:g}", font=font(34, False), fill=GREY, anchor="mm")
+        d.text((cx, y0 - h - 44), f"{v:g}", font=font(48), fill=INK, anchor="mm")
     d.line([x0, y0, x1, y0], fill=INK, width=LW)
     if ref is not None:
         yr = y0 - (y0 - y1) * ref / vmax
@@ -126,11 +126,14 @@ def scatter(points, xlabel, ylabel, color=ORANGE, bg=CREAM):
 # ---------------- counts ----------------
 def dots(big, small, n=60, icon="●", cols=15, color=BLUE, bg=CREAM, highlight=0):
     """Big number on top, a grid of n identical pictograms under it; the first `highlight` are drawn in accent colour."""
-    im, d, _ = canvas(bg); d.text((W // 2, 280), big, font=font(110), fill=INK, anchor="mm")
-    f = font(54, False); rows = math.ceil(n / cols); sx, sy = 70, 76; x0 = W // 2 - cols * sx // 2 + sx // 2; y0 = 420
+    im, d, _ = canvas(bg); d.text((W // 2, 270), big, font=font(110), fill=INK, anchor="mm")
+    if n <= 12: cols = n
+    rows = math.ceil(n / cols); sx = min(96, 1320 / cols); sy = min(96, 440 / rows)        # grid always fits the card
+    f = font(max(18, int(min(sx, sy) * 0.85)), False)
+    x0 = W // 2 - (cols - 1) * sx / 2; y0 = 400 + (440 - rows * sy) / 2 + sy / 2
     for i in range(n):
         d.text((x0 + (i % cols) * sx, y0 + (i // cols) * sy), icon, font=f, fill=ORANGE if i < highlight else color, anchor="mm")
-    if small: title(d, small, y=min(900, y0 + rows * sy + 40), size=44, fill=GREY)
+    if small: title(d, small, y=890, size=44, fill=GREY)
     return im
 
 # ---------------- gauges ----------------

@@ -9,7 +9,7 @@ that says what the number is (clock, calendar, fuel, thermometer...), and consec
   card("gauge", "412 TABLETS", "of 730", value=0.56, icon="pills")   # number + progress bar
   python cards.py   -> writes cards_demo.jpg (all icons and layouts) for a visual check
 
-Icons: clock, calendar, fuel, thermo, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart
+Icons: clock, calendar, fuel, thermo, snow, water, food, pills, hourglass, key, radio, fire, plane, battery, wind, sun, moon, heart, people
 """
 import math, pathlib, sys
 from PIL import Image, ImageDraw, ImageFont
@@ -141,6 +141,13 @@ def ic_sun(d, x, y, s):
 def ic_moon(d, x, y, s):
     _ell(d, x, y, s, SAND, 0.9); d.ellipse([x + s * 0.3, y - s * 0.02, x + s * 1.05, y + s * 0.78], fill=CREAM)
     d.arc([x + s * 0.05, y + s * 0.05, x + s * 0.95, y + s * 0.95], 40, 320, fill=INK, width=LW)
+
+def ic_people(d, x, y, s):
+    for k, (cx, cy, r) in enumerate(((0.25, 0.42, 0.14), (0.75, 0.42, 0.14), (0.5, 0.36, 0.17))):
+        px, py, rr = x + s * cx, y + s * cy, s * r
+        d.rounded_rectangle([px - rr * 1.5, py + rr * 0.9, px + rr * 1.5, y + s], 30, fill=BLUE if k == 2 else SAGE, outline=INK, width=LW)
+        d.ellipse([px - rr, py - rr, px + rr, py + rr], fill=WHITE, outline=INK, width=LW)
+        d.ellipse([px - rr * 0.35 - 5, py - 5, px - rr * 0.35 + 5, py + 5], fill=INK); d.ellipse([px + rr * 0.35 - 5, py - 5, px + rr * 0.35 + 5, py + 5], fill=INK)
 
 def ic_heart(d, x, y, s):
     cx = x + s / 2

@@ -34,8 +34,13 @@ def starts_from_timing(shots, timing):
     return out
 
 def title_card(text, dark=False):
-    im = Image.new("RGB", (W, H), (38, 48, 60) if dark else CREAM); d = ImageDraw.Draw(im)
-    d.text((W // 2, H // 2), text, font=font(120, True), fill=CREAM if dark else INK, anchor="mm"); return im
+    im = Image.new("RGB", (W, H), (38, 48, 60) if dark else CREAM); d = ImageDraw.Draw(im); f = font(120, True)
+    if d.textlength(text, font=f) > 1600:                       # wrap long titles on two balanced lines
+        w = text.split(); k = len(w) // 2; lines = [" ".join(w[:k]), " ".join(w[k:])]
+        while max(d.textlength(l, font=f) for l in lines) > 1600 and f.size > 60: f = font(f.size - 8, True)
+    else: lines = [text]
+    for i, l in enumerate(lines): d.text((W // 2, H // 2 + (i - (len(lines) - 1) / 2) * f.size * 1.25), l, font=f, fill=CREAM if dark else INK, anchor="mm")
+    return im
 
 def fallback(text):
     im = Image.new("RGB", (W, H), CREAM); d = ImageDraw.Draw(im); words, lines, cur = text.split(), [], ""

@@ -7,6 +7,7 @@ shots.json = [ {"i": 1, "sentence": "...", "family": "scene", "scene": "the char
                 "composition": "wide", "dark": false, "file": "F01"}, ... ]
   family: scene | icon | schema | metaphor | map | card | chart | title      (card/chart/title are rendered by code: no prompt)
   composition (optional, rotated automatically if missing): wide | medium | close | cutaway | overhead | pov
+  nochar: true  -> the recurring character sheet is not added (a scene with other people only)
   Flow prompts are built only for scene / icon / schema / metaphor / map.
 
 A STYLE dict at the top holds the channel's house style; edit it once per channel, never per prompt.
@@ -75,9 +76,12 @@ def build(shots):
         fam = s["family"]
         if fam not in FAMILY_TEMPLATE: continue
         comp = s.get("composition") or (next(comps) if fam == "scene" else "")
-        body = FAMILY_TEMPLATE[fam].format(comp=COMPOSITIONS.get(comp, ""), scene=s["scene"].rstrip("."), scene_bg=STYLE["scene_bg"], insert_bg=STYLE["insert_bg"])
-        parts = [STYLE["prefix"], STYLE["character"] if fam in ("scene", "metaphor") else "", STYLE["setting"] if fam == "scene" else "", body,
-                 STYLE["dark"] if s.get("dark") else "", STYLE["suffix"]]
+        dark = bool(s.get("dark"))
+        body = FAMILY_TEMPLATE[fam].format(comp=COMPOSITIONS.get(comp, ""), scene=s["scene"].rstrip("."),
+                                           scene_bg="Full coloured set at night, dark slate-blue tones, one warm light source." if dark else STYLE["scene_bg"],
+                                           insert_bg="Dark slate-blue background, nothing else drawn around the subject, the subject centred." if dark else STYLE["insert_bg"])
+        parts = [STYLE["prefix"], STYLE["character"] if fam in ("scene", "metaphor") and not s.get("nochar") else "", STYLE["setting"] if fam == "scene" else "", body,
+                 STYLE["dark"] if dark else "", STYLE["suffix"]]
         out.append({"file": s.get("file") or f"F{s['i']:03d}", "i": s["i"], "family": fam, "prompt": re.sub(r"\s+", " ", " ".join(p for p in parts if p)).strip()})
     return out
 
