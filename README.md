@@ -72,7 +72,15 @@ node skills/why-explainer-video/scripts/flow/batch.mjs prompts.json flow/my-vide
 python skills/why-explainer-video/scripts/flow/convert.py flow/my-video
 ```
 
-`prompts.json` is `[{"file": "F01", "prompt": "<style prefix> <scene>"}, …]`. Measured: about 25 s per image, 65 images in 27 minutes. Requirements: Node 18+, Chrome, a Google account with Flow (AI Pro or Ultra credits), Python 3 with Pillow.
+`prompts.json` is `[{"file": "F01", "prompt": "<style prefix> <scene>"}, …]`.
+
+Optional: the [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) attached to the same Chrome lets Claude look at the Flow page and the generated tiles directly (screenshots, DOM, full-size images) instead of scripting it:
+
+```bash
+claude mcp add --scope user chrome-devtools -- npx -y chrome-devtools-mcp@latest --browserUrl http://127.0.0.1:9222
+```
+
+It loads at the next session start and needs `browser.mjs` running (port 9222). Measured: about 25 s per image, 65 images in 27 minutes. Requirements: Node 18+, Chrome, a Google account with Flow (AI Pro or Ultra credits), Python 3 with Pillow.
 
 ## Number cards with icons (no bare numbers)
 
