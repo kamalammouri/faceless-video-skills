@@ -16,7 +16,7 @@ The skills are written in French (the instructions Claude reads); the videos the
 **Claude Code**: copy a skill folder into your skills directory, then start a new session.
 
 ```bash
-git clone https://github.com/<you>/faceless-video-skills
+git clone https://github.com/kamalammouri/faceless-video-skills
 cp -r faceless-video-skills/skills/why-explainer-video ~/.claude/skills/
 cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
 ```
