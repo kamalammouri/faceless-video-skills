@@ -19,13 +19,18 @@ export const FLOW_URL = 'https://labs.google/fx/tools/flow';
 export const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 export const stamp = () => new Date().toTimeString().slice(0, 8);
 
-/** Attach to the Chrome started by browser.mjs and return its Flow page (or the first page). */
+/** Attach to the Chrome started by browser.mjs and return its Flow page; FLOW_PROJECT=<project url> is opened in a new tab when none is found. */
 export async function attach() {
   let browser;
   try { browser = await chromium.connectOverCDP(CDP, { timeout: 5000 }); }
   catch (e) { console.error(`No Chrome on ${CDP}. Start it first: node scripts/flow/browser.mjs (keep it running).`); process.exit(2); }
   const ctx = browser.contexts()[0] || await browser.newContext();
   const pages = ctx.pages();
-  const page = pages.find(p => p.url().includes('labs.google')) || pages[0] || await ctx.newPage();
+  let page = pages.find(p => /flow\.google\.com|labs\.google/.test(p.url()));
+  if (!page) {                      // the user browsed elsewhere in that tab or closed it: open Flow in a NEW tab, never touch their tabs
+    const url = process.env.FLOW_PROJECT || FLOW_URL;
+    console.log(`${stamp()} no Flow tab found: opening ${url} in a new tab`);
+    page = await ctx.newPage(); await page.goto(url, { waitUntil: 'domcontentloaded' }); await sleep(6000);
+  }
   return { browser, ctx, page };
 }

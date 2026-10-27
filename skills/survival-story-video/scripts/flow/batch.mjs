@@ -31,9 +31,14 @@ const { page } = await attach(); page.setDefaultTimeout(15_000);
 const box = () => page.getByRole('textbox', { name: /Que voulez-vous créer|What do you want to create/i }).first();
 const genButton = () => page.getByRole('button', { name: /Lancer la génération|^Generate$|Générer/i }).first();
 const groups = () => page.locator('main [role="group"]');
-async function attachRef() {   // open the ingredient picker, search the reference by its caption, click it (it becomes a chip in the prompt bar)
-  if (!REF) return true;
-  if (await page.getByRole('button', { name: /^Ingrédient$|^Ingredient$/ }).count()) return true;   // already attached
+async function attachRef(prompt) {   // open the ingredient picker, search the reference by its caption, click it (it becomes a chip in the prompt bar)
+  const chip = page.getByRole('button', { name: /^Ingrédient$|^Ingredient$/ });
+  const wanted = REF && /reference image/i.test(prompt);        // only prompts that point to it (prompts.py --ref): a reference attached to a
+  if (!wanted) {                                                 // background or a no-character insert puts the character into the picture
+    if (await chip.count()) { await page.getByRole('button', { name: /Effacer le prompt|Clear prompt/i }).first().click().catch(() => {}); await sleep(400); }
+    return true;
+  }
+  if (await chip.count()) return true;   // already attached
   await page.getByRole('button', { name: /Ajouter des ingrédients|Add ingredients/i }).first().click(); await sleep(900);
   const search = page.getByRole('textbox', { name: /Rechercher des éléments|Search/i }).first();
   if (await search.count()) { await search.fill(REF); await sleep(900); }
@@ -78,7 +83,7 @@ for (const [k, p] of todo.entries()) {
   try {
     await scrollTop();
     const before = new Set(await bigImages()); const fails0 = await failCount();
-    if (!(await attachRef())) { console.log(`${stamp()} ${p.file} SKIP: reference ingredient could not be attached`); skipped++; await sleep(PACE); continue; }
+    if (!(await attachRef(p.prompt))) { console.log(`${stamp()} ${p.file} SKIP: reference ingredient could not be attached`); skipped++; await sleep(PACE); continue; }
     const b = box(); await b.click(); await page.keyboard.press('End'); await page.keyboard.insertText(p.prompt); await sleep(300);
     const g = genButton();
     if (await g.isDisabled().catch(() => true)) { console.log(`${stamp()} ${p.file} SKIP: generate button disabled (no credits or empty prompt)`); skipped++; await sleep(PACE); continue; }
