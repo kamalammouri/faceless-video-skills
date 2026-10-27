@@ -19,6 +19,7 @@ import path from 'node:path';
 import { attach, sleep, stamp } from './cdp.mjs';
 
 const [src = 'prompts.json', out = 'flow/out'] = process.argv.slice(2);
+const REF = process.env.REF || '';
 const PACE = Number(process.env.PACE || 45_000), WAIT = Number(process.env.WAIT || 150_000), MAXFAIL = Number(process.env.MAXFAIL || 3);
 const prompts = JSON.parse(fs.readFileSync(src, 'utf8'));
 fs.mkdirSync(out, { recursive: true });
@@ -30,7 +31,6 @@ const { page } = await attach(); page.setDefaultTimeout(15_000);
 const box = () => page.getByRole('textbox', { name: /Que voulez-vous créer|What do you want to create/i }).first();
 const genButton = () => page.getByRole('button', { name: /Lancer la génération|^Generate$|Générer/i }).first();
 const groups = () => page.locator('main [role="group"]');
-const REF = process.env.REF || '';
 async function attachRef() {   // open the ingredient picker, search the reference by its caption, click it (it becomes a chip in the prompt bar)
   if (!REF) return true;
   if (await page.getByRole('button', { name: /^Ingrédient$|^Ingredient$/ }).count()) return true;   // already attached
