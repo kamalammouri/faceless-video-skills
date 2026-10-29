@@ -25,7 +25,7 @@ YouTube montre d'abord la vidéo aux gens qui regardent des vidéos similaires. 
 
 ### Horaires
 - Publier entre 12 h et 14 h heure de l'Est (ET), pour que la vidéo soit indexée et testée avant le pic du soir US (18 h–23 h ET). Sur The Hidden Bargain, la seule vidéo publiée à 13 h ET a fait 269 vues, les quatre publiées entre 18 h et 20 h ET 4 à 37.
-- Conversion : toujours par code (`zoneinfo`, `America/New_York` vers le fuseau de l'utilisateur), jamais de tête : les USA et l'Europe ne changent pas d'heure le même jour. 12 h ET = 18 h à Paris la plupart de l'année, 17 h pendant les semaines de décalage (mi-mars à fin mars, dernière semaine d'octobre).
+- Conversion : toujours par code (`zoneinfo`, `America/New_York` vers le fuseau de l'utilisateur), jamais de tête : les USA et l'Europe ne changent pas d'heure le même jour. 12 h ET = 18 h à Paris la plupart de l'année, 17 h pendant les semaines de décalage (mi-mars à fin mars, dernière semaine d'octobre). Depuis le Maroc : **18 h heure marocaine** tombe toujours entre 12 h et 14 h ET (UTC+1, ou UTC+0 pendant le ramadan), c'est l'heure fixe retenue pour The Hidden Bargain.
 - Une fois l'audience US installée, se fier à l'onglet « Quand vos spectateurs sont sur YouTube » dans Studio.
 
 ### Packaging pour le public US
