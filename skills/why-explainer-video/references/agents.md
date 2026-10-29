@@ -13,6 +13,7 @@ Un seul rédacteur qui écrit, dessine, vérifie et publie finit par se répéte
 
 Contrainte de production à appliquer en premier : le **budget Flow** (5 images Flow par minute de vidéo au plus). Quand la liste dépasse, proposer les plans à tenir sur plusieurs phrases (même `file`) et les inserts à rendre par code plutôt que par Flow.
 | Après la génération des images | **Image QC** (vision) | planche contact + shot list | liste des images à régénérer avec le nouveau prompt |
+| Avant la miniature | **English copy editor** | tous les textes anglais visibles | tableau de corrections |
 | Avant livraison | **Publication checker** | fiche de publication + voice.json | fiche corrigée ou « OK » |
 
 L'orchestrateur ne refait pas le travail des agents : il applique leurs corrections, relance ce qui doit l'être (régénération Flow des rejets), et passe la checklist finale.
@@ -61,7 +62,8 @@ Script : [SCRIPT]
 Tu es un script doctor pour vidéos YouTube [format]. Lis le script et signale, avec la phrase exacte : (1) les répétitions
 de structure ou de mot (même tournure deux fois en moins de 60 s), (2) les passages sans image mentale (abstraits), (3) les
 chiffres ronds suspects, (4) les ruptures de point de vue (2ᵉ personne, présent), (5) les boucles ouvertes résolues trop tôt,
-(6) les phrases trop longues pour une voix IA (> 25 mots). Pour chaque point, propose la réécriture. Maximum 25 points,
+(6) les phrases trop longues pour une voix IA (> 25 mots), (7) les fautes de grammaire, les tournures non idiomatiques
+et les britannicismes pour un auditeur américain. Pour chaque point, propose la réécriture. Maximum 25 points,
 du plus grave au plus léger. Rends un tableau : phrase | problème | réécriture.
 Script : [SCRIPT]
 ```
@@ -122,9 +124,26 @@ Planche : [CHEMIN]  Shot list : [SHOT LIST]
 Fiche du personnage : [phrase « qc » du style dans scripts/styles.json + fiche custom de brief.json s'il y en a une]
 ```
 
+### English copy editor
+```
+Tu es un rédacteur-correcteur américain natif, spécialiste des titres et miniatures YouTube. Relis chaque texte ci-dessous
+comme un spectateur américain : grammaire, idiome, naturel, orthographe US, majuscules. Une formule courte de miniature
+doit être soit une vraie question grammaticale (« WHY DO WE SNORE? »), soit un titre sans point d'interrogation
+(« WHY WE SNORE »), soit « WHY + nom pluriel » (« WHY GOOSEBUMPS? ») ; signale « WHY + verbe en -ing » (« WHY SNORING? »),
+« WHY + nom singulier sans article » (« WHY APPENDIX? ») et « WHY WE/YOU + verbe ? » (« WHY YOU BLUSH? »). Ne change ni le
+sens, ni la longueur limite (titre ≤ 60 caractères, miniature 2 à 4 mots). Rends uniquement un tableau :
+texte d'origine | problème (ou « OK ») | correction. Ne réécris pas un texte correct pour le style.
+Textes : [TITRE + 2 ALTERNATIVES, TEXTE DE MINIATURE, CHAPITRES, CARTES-TITRES ET LÉGENDES, DESCRIPTION, COMMENTAIRE ÉPINGLÉ, TITRE DU SHORT]
+```
+
 ### Publication checker
 ```
-Vérifie cette fiche de publication YouTube. Contrôle : titre ≤ 70 caractères sans majuscules abusives ; description avec
+Vérifie cette fiche de publication YouTube. Contrôle : titre ≤ 60 caractères sans majuscules abusives ; texte de miniature
+de 2 à 4 mots en anglais grammatical (pas « WHY SNORING? », « WHY APPENDIX? » ni « WHY YOU BLUSH? »), sans nombre au format
+durée comme « 3:47 », miniature au style caveman-duo ; sujet au format de la chaîne (paradoxe du corps ou « What if » sur
+l'évolution humaine, jamais une histoire de survie jour par jour) ; durée de la voix entre 4 et 7 minutes ; programmation
+entre 12 h et 14 h heure de l'Est avec l'heure locale ; public « pas conçue pour les enfants » ; commentaires activés ;
+playlist ; Short prévu ; description avec
 chapitres dont le premier est 00:00, au moins 3, chacun ≥ 10 s, croissants, et calés sur les temps réels du fichier de voix
 joint (pas sur une estimation) ; tags ≤ 500 caractères au total, 15 à 20 ; catégorie Éducation écrite ; langue ; public ;
 contenu synthétique = oui ; commentaire à épingler ; miniature 1280 × 720 < 2 Mo. Rends « OK » ou la liste des corrections
@@ -137,4 +156,4 @@ Fiche : [FICHE]  Temps de voix : [VOICE.JSON ou liste des débuts de scène]
 - Un agent reçoit **tout** ce dont il a besoin dans son brief (le script, la liste, le préfixe) : il ne voit pas la conversation.
 - Les sorties sont des tableaux courts ; l'orchestrateur applique, il ne discute pas.
 - Image QC tourne après chaque lot Flow ; les rejets sont régénérés avec le prompt réécrit (supprimer le `.jpg` et le `.png`, relancer `batch.mjs`), puis Image QC repasse sur les nouvelles vignettes seulement. Deux passes maximum, ensuite remplacer par une carte par code.
-- Pour une vidéo courte (pilote < 5 min), Fact-checker et Image QC suffisent.
+- Pour une vidéo courte (pilote < 5 min), Fact-checker, Image QC et English copy editor suffisent.

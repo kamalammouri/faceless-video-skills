@@ -25,7 +25,17 @@ import json, sys, os, time, wave, pathlib, subprocess, base64, io, shutil
 
 SR = 24000
 DEFAULT_MODEL = "gemini-3.8-flash-tts"
-DEFAULT_VOICE = {"gemini": {"en": "Kore", "fr": "Kore"}, "edge": {"en": "en-US-GuyNeural", "fr": "fr-FR-HenriNeural"}}
+DEFAULT_VOICE = {"gemini": {"en": "Kore", "fr": "Kore"}, "edge": {"en": "en-US-GuyNeural", "fr": "fr-FR-HenriNeural"},
+                 "eleven": {"en": "Brian", "fr": "Brian"}, "voicebox": {"en": "Narrator Ryan (qwen)", "fr": "Narrator Ryan (qwen)"}}
+VOICEBOX_URL = os.environ.get("VOICEBOX_URL", "http://127.0.0.1:17493")   # local Voicebox app (jamiepine/voicebox), free, CPU or GPU
+VOICEBOX_ENGINE = "qwen_custom_voice"                                       # kokoro = 5 s per sentence on CPU, qwen_custom_voice = 95 s but far more natural
+# Rhythm control (29 Oct 2026, after the snoring episode): Qwen draws a different tempo for every sentence (1.3 to 3.6 words/s measured on
+# 64 clips) when each clip is generated alone with a random seed. So: one fixed seed for the whole video (--seed, default 42), a pace hint
+# appended to the instruct, and every voicebox clip is measured (words per second of voiced audio); outside --rate-min..--rate-max
+# (1.8..2.8) it is regenerated with the next seed of VOICEBOX_SEEDS, up to --tries times, keeping the clip closest to the middle.
+VOICEBOX_SEEDS = [42, 7, 1234, 99, 2024]
+PACE_HINT = "steady even pace, no rushing, no dramatic pauses"
+ELEVEN_MODEL = "eleven_multilingual_v2"
 DEFAULT_STYLE = "calm, slow, low-pitched documentary narration, no enthusiasm"
 
 def arg_value(args, flag, default=None):
@@ -88,10 +98,74 @@ def tts_edge(text, voice, rate, dst):
     asyncio.run(edge_tts.Communicate(text, voice, rate=rate).save(str(mp3)))
     to_wav24(mp3, dst); mp3.unlink()
 
+# eleven : ELEVENLABS_API_KEY in the environment or .env ; voice = a premade name ("Brian", "Daniel"...) or a voice_id ; model
+#          eleven_multilingual_v2 by default ; the remaining character quota is checked BEFORE the first call and the script
+#          exits with code 3 when it is short, so the caller can fall back to --engine edge for the whole video (never mix voices).
+def eleven_req(path, data=None, headers=None):
+    import urllib.request
+    req = urllib.request.Request("https://api.elevenlabs.io/v1" + path, data=data,
+                                 headers={"xi-api-key": os.environ["ELEVENLABS_API_KEY"], **(headers or {})})
+    return urllib.request.urlopen(req, timeout=180).read()
+
+def eleven_voice_id(name):
+    if len(name) >= 20 and " " not in name: return name
+    voices = json.loads(eleven_req("/voices"))["voices"]
+    for v in voices:
+        if v["name"].split(" - ")[0].strip().lower() == name.lower(): return v["voice_id"]   # library names read "Brian - Deep, Resonant..."
+    sys.exit(f"ElevenLabs voice '{name}' not found; available: {[v['name'] for v in voices]}")
+
+def eleven_quota():
+    s = json.loads(eleven_req("/user/subscription")); return s["character_limit"] - s["character_count"]
+
+def tts_eleven(text, voice_id, model, dst):
+    import urllib.error
+    body = json.dumps({"text": text, "model_id": model, "voice_settings": {"stability": 0.55, "similarity_boost": 0.75, "style": 0.0}}).encode()
+    try: audio = eleven_req(f"/text-to-speech/{voice_id}?output_format=mp3_44100_128", body, {"Content-Type": "application/json"})
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 402): print(f"ElevenLabs refused ({e.code}): {e.read()[:200]} -> fall back to --engine edge"); sys.exit(3)
+        raise
+    mp3 = dst.with_suffix(".mp3"); mp3.write_bytes(audio); to_wav24(mp3, dst); mp3.unlink()
+
+# voicebox : the Voicebox desktop app running locally (its API on VOICEBOX_URL). voice = a profile NAME (or id) created in the app or
+#          by POST /profiles (voice_type preset: engine kokoro / qwen_custom_voice + preset_voice_id) ; model = the engine name ;
+#          style = the "instruct" sentence. /generate/stream returns a 24 kHz mono WAV. Measured 28 Oct 2026 on CPU: kokoro 4.7 s
+#          per sentence, qwen_custom_voice 95 s. Several voices in one run: use --cache / --out / --timing per voice.
+_vb_profiles = {}
+def voicebox_profile_id(name):
+    import urllib.request
+    if not _vb_profiles:
+        for p in json.loads(urllib.request.urlopen(VOICEBOX_URL + "/profiles", timeout=30).read()): _vb_profiles[p["name"].lower()] = p["id"]; _vb_profiles[p["id"]] = p["id"]
+    pid = _vb_profiles.get(name.lower()) or _vb_profiles.get(name)
+    if not pid: sys.exit(f"Voicebox profile '{name}' not found; existing: {sorted(k for k in _vb_profiles if k != _vb_profiles[k])}")
+    return pid
+
+def speech_rate(path, words):
+    """Words per second of voiced audio (leading and trailing silence under -40 dBFS removed), 0 if unreadable."""
+    import struct
+    with wave.open(str(path), "rb") as w: n, sr, raw = w.getnframes(), w.getframerate(), w.readframes(w.getnframes())
+    a = struct.unpack("<%dh" % (len(raw) // 2), raw); win = max(1, int(sr * 0.02)); thr = 32768 * 10 ** (-40 / 20)
+    rms = lambda seg: (sum(x * x for x in seg) / max(1, len(seg))) ** 0.5
+    lead = 0
+    while lead + win < len(a) and rms(a[lead:lead + win]) < thr: lead += win
+    trail = 0
+    while trail + win < len(a) and rms(a[len(a) - trail - win:len(a) - trail]) < thr: trail += win
+    speech = (len(a) - lead - trail) / sr
+    return words / speech if speech > 0.2 else 0.0
+
+def tts_voicebox(text, profile, engine, instruct, lang, dst, seed=None):
+    import urllib.request
+    body = {"profile_id": voicebox_profile_id(profile), "text": text, "language": lang, "engine": engine}
+    if instruct: body["instruct"] = instruct[:500]
+    if seed is not None: body["seed"] = int(seed)
+    req = urllib.request.Request(VOICEBOX_URL + "/generate/stream", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    dst.write_bytes(urllib.request.urlopen(req, timeout=1800).read())
+
 def synth(engine, text, cfg, dst, attempts=4):
     for n in range(attempts):
         try:
             if engine == "gemini": tts_gemini(text, cfg["voice"], cfg["style"], cfg["model"], dst)
+            elif engine == "eleven": tts_eleven(text, cfg["voice_id"], cfg["model"], dst)
+            elif engine == "voicebox": tts_voicebox(text, cfg["voice"], cfg["model"], cfg["style"], cfg["lang"], dst, cfg.get("seed"))
             else: tts_edge(text, cfg["voice"], cfg["rate"], dst)
             return True
         except Exception as e:  # quota (429), transient 5xx, network: wait and retry
@@ -109,7 +183,7 @@ def main(args):
     bp = pathlib.Path(arg_value(args, "--brief", "brief.json")); brief = json.load(open(bp, encoding="utf-8")) if bp.exists() else {}
     bv = brief.get("voice") or {}
     engine = arg_value(args, "--engine", bv.get("engine") or "edge")
-    if engine not in DEFAULT_VOICE: sys.exit(f"unknown engine '{engine}': gemini | edge")
+    if engine not in DEFAULT_VOICE: sys.exit(f"unknown engine '{engine}': gemini | edge | eleven | voicebox")
     lang = (brief.get("voice_language") or "en")[:2].lower()
     cfg = {"voice": arg_value(args, "--voice", bv.get("name") or DEFAULT_VOICE[engine].get(lang, DEFAULT_VOICE[engine]["en"])),
            "style": arg_value(args, "--style", bv.get("style") if bv.get("style") is not None else DEFAULT_STYLE),
@@ -119,7 +193,24 @@ def main(args):
     only = {int(x) for x in arg_value(args, "--only", "").split(",") if x.strip()}
     cache = pathlib.Path(arg_value(args, "--cache", "tts")) / engine; cache.mkdir(parents=True, exist_ok=True)
     if engine == "gemini" and not os.environ.get("GEMINI_API_KEY"): sys.exit("GEMINI_API_KEY missing: put it in the environment or in a local .env")
-    print(f"engine {engine} | voice {cfg['voice']} | {'model ' + cfg['model'] + ' | style ' + repr(cfg['style']) if engine == 'gemini' else 'rate ' + cfg['rate']} | lang {lang}")
+    cfg["lang"] = lang
+    if engine == "voicebox":
+        cfg["seed"] = int(arg_value(args, "--seed", bv.get("seed", VOICEBOX_SEEDS[0])))
+        if cfg["style"] and PACE_HINT not in cfg["style"]: cfg["style"] = cfg["style"].rstrip(". ") + ", " + PACE_HINT
+        cfg["rate_min"], cfg["rate_max"] = float(arg_value(args, "--rate-min", bv.get("rate_min", 1.8))), float(arg_value(args, "--rate-max", bv.get("rate_max", 2.8)))
+        cfg["tries"] = int(arg_value(args, "--tries", bv.get("tries", 3)))
+    if engine == "voicebox":
+        if cfg["model"] == DEFAULT_MODEL: cfg["model"] = VOICEBOX_ENGINE
+        voicebox_profile_id(cfg["voice"])
+    if engine == "eleven":
+        if not os.environ.get("ELEVENLABS_API_KEY"): print("ELEVENLABS_API_KEY missing: put it in the environment or in a local .env -> fall back to --engine edge"); sys.exit(3)
+        if cfg["model"] == DEFAULT_MODEL: cfg["model"] = ELEVEN_MODEL
+        cfg["voice_id"] = eleven_voice_id(cfg["voice"])
+        need = sum(len((s.get("sentence") or "").strip()) for s in shots if (s.get("sentence") or "").strip() and (not only or s["i"] in only)
+                   and not ((cache / f"S{s['i']:04d}.txt").exists() and (cache / f"S{s['i']:04d}.txt").read_text(encoding="utf-8") == f"{cfg['voice']}|{(s.get('sentence') or '').strip()}"))
+        left = eleven_quota(); print(f"ElevenLabs quota: {left} characters left, {need} needed")
+        if left < need: print("quota too short -> fall back to --engine edge"); sys.exit(3)
+    print(f"engine {engine} | voice {cfg['voice']} | {'model ' + cfg['model'] + ' | style ' + repr(cfg['style']) if engine == 'gemini' else 'model ' + cfg['model'] if engine in ('eleven', 'voicebox') else 'rate ' + cfg['rate']} | lang {lang}")
 
     voices = brief.get("voices") or {}; unknown = set()
     made = skipped = failed = 0
@@ -133,7 +224,20 @@ def main(args):
         key = f"{vcfg['voice']}|{text}"
         if dst.exists() and txt.exists() and txt.read_text(encoding="utf-8") == key: skipped += 1; continue
         print(f"#{s['i']:>3} {name} [{spk or 'narrator'} / {vcfg['voice']}]: {text[:60]}")
-        if synth(engine, text, vcfg, dst): txt.write_text(key, encoding="utf-8"); made += 1; time.sleep(pace / 1000)
+        ok = synth(engine, text, vcfg, dst)
+        words = len(text.split())
+        if ok and engine == "voicebox" and vcfg["model"] != "kokoro" and words >= 6:   # kokoro is deterministic; a short line is naturally slow
+            r = speech_rate(dst, words); mid = (vcfg["rate_min"] + vcfg["rate_max"]) / 2
+            best = (abs(r - mid), dst.read_bytes(), r, vcfg["seed"]); k = 0
+            while not (vcfg["rate_min"] <= r <= vcfg["rate_max"]) and k < vcfg["tries"]:
+                k += 1; seed = VOICEBOX_SEEDS[(VOICEBOX_SEEDS.index(vcfg["seed"]) + k) % len(VOICEBOX_SEEDS)] if vcfg["seed"] in VOICEBOX_SEEDS else VOICEBOX_SEEDS[k % len(VOICEBOX_SEEDS)]
+                print(f"      rate {r:.2f} words/s outside {vcfg['rate_min']}..{vcfg['rate_max']}: retry {k} with seed {seed}")
+                if not synth(engine, text, dict(vcfg, seed=seed), dst): print("      retry failed (server?), keeping the best clip so far"); break
+                r = speech_rate(dst, words)
+                if abs(r - mid) < best[0]: best = (abs(r - mid), dst.read_bytes(), r, seed)
+            if not dst.exists() or dst.read_bytes() != best[1]: dst.write_bytes(best[1])
+            print(f"      kept {best[2]:.2f} words/s (seed {best[3]})")
+        if ok: txt.write_text(key, encoding="utf-8"); made += 1; time.sleep(pace / 1000)
         else: failed += 1
     print(f"clips: {made} made, {skipped} unchanged, {failed} failed" + (f" | speakers without a voice in brief.voices (main voice used): {sorted(unknown)}" if unknown else ""))
 
