@@ -10,8 +10,11 @@ Chaque livraison se termine par un bloc « Publication » prêt à coller dans Y
 | Description | bloc complet (hook, promesse, chapitres, suite, hashtags) |
 | **Catégorie** | **Éducation** (Education), pour toutes les vidéos de la chaîne : la même catégorie partout aide YouTube à relier les vidéos entre elles et aux chaînes voisines |
 | Tags | 15 à 20, **500 caractères au total maximum**, vérifier la longueur par code |
-| Langue de la vidéo | anglais |
-| Public | « Non, pas conçu pour les enfants » |
+| Langue de la vidéo | English (United States), pour la vidéo et les métadonnées |
+| Heure de publication | **12 h à 14 h heure de l'Est**, jeudi à samedi de préférence, programmée dans Studio, jamais après 16 h ET. Donner la date et l'heure en ET **et** dans le fuseau de l'utilisateur, calculées par code : `python -c "from datetime import datetime;from zoneinfo import ZoneInfo as Z;t=datetime(2026,11,5,12,tzinfo=Z('America/New_York'));print(t.astimezone(Z('Europe/Paris')))"` (12 h ET = 18 h à Paris la plupart de l'année, 17 h pendant les semaines de décalage des changements d'heure). Puis l'onglet « Quand vos spectateurs sont sur YouTube » dès qu'il existe |
+| Public | « Non, pas conçu pour les enfants » (sinon commentaires, écran de fin et recommandations sont coupés) |
+| Commentaires | activés ; vérifier après la mise en ligne que la section commentaires s'affiche |
+| Short | Short d'appel 9:16 (étape 10 du workflow), titre + `#shorts`, « Vidéo associée » = la vidéo longue, publié le lendemain de 12 h à 14 h ET |
 | Contenu modifié ou synthétique | **oui** (voix et images générées par IA) : YouTube l'exige pour une voix réaliste |
 | Miniature | fichier 1280 × 720, < 2 Mo, texte ajouté par code |
 | Écran de fin | 5 dernières secondes : bouton Abonnement + emplacement « vidéo suivante » |
@@ -34,12 +37,12 @@ Why Evolution [verbe fort] [trait humain visible] ([parenthèse qui nie la répo
 
 ## 2. Miniature
 
-Gabarit unique sur les 29 miniatures de la référence :
+Gabarit unique sur les 29 miniatures Apefully, confirmé par les miniatures à plus d'un million de vues des chaînes de référence (« ONLY 2 LEFT », « DAY 1. », « 1,000 OR 1? », « 1 MINUTE », « THE PRICE OF LUST. ») :
 
 | Élément | Règle |
 |---|---|
-| Texte | 2 à 4 mots, majuscules, jaune vif avec contour noir épais, en haut du cadre, terminé par `?` ou `?!` |
-| Formule | « WHY … ? » (WHY BALD?!, WHY BLUE EYES?, WHY SO PALE?, WHY DO WE DIE?) |
+| Texte | 2 à 4 mots en anglais grammatical, relus par l'English copy editor (« WHY DO WE SNORE? » ou « WHY WE SNORE », jamais « WHY SNORING? », « WHY APPENDIX? » ni « WHY YOU BLUSH? »), jamais de nombre au format durée (« 3:47 »), majuscules, jaune vif (242,196,70) avec contour noir épais sur un bandeau bleu nuit en haut du cadre (`scripts/thumb.py`) |
+| Formule | **un chiffre** (« 1 IN 13 », « ONLY 2 LEFT », « 1 MINUTE ») ou **une question** « WHY … ? » (WHY GOOSEBUMPS?, WHY BALD?!) ; proposer les deux, le chiffre d'abord |
 | Personnages | un duo de mascottes récurrentes, expressives (choc, sueur, larmes), visage visible, style cartoon saturé, différent du style intérieur de la vidéo |
 | Accessoire | un seul objet qui dit le sujet sans texte (banane, carte, bol, feu) |
 | Décor | savane, coucher de soleil, nuit avec feu ; couleurs saturées |
@@ -52,11 +55,11 @@ messy brown hair, big eyes, stick limbs), [ÉMOTION], [ACCESSOIRE], [DÉCOR] at 
 saturated colors, large empty area at the top for text, 16:9
 ```
 
-Puis ajouter le texte « WHY … ? » en jaune (242,196,70) à contour noir par code (PIL, police Impact, contour 10 px, image 1280 × 720), jamais par le générateur d'images. Le personnage choisi au brief (gabarit `thumbnail` de son style dans `scripts/styles.json`) peut remplacer le duo de mascottes : il relie la miniature au contenu ; pour `stickman-meme`, composition coupée en deux, perdant à gauche, gagnant à droite. Laisser une moitié du cadre vide pour le texte.
+Puis ajouter le texte « WHY … ? » en jaune (242,196,70) à contour noir par code (PIL, police Impact, contour 10 px, image 1280 × 720), jamais par le générateur d'images. Sur The Hidden Bargain, **toujours le duo caveman-duo** (gabarit `thumbnail` de `caveman-duo` dans `scripts/styles.json`), même si l'intérieur est en thin-line : les miniatures egg-headphones de Blush et Antarctic ont fait 37 et 18 vues. Pour une autre chaîne seulement, le personnage du brief peut remplacer le duo (pour `stickman-meme`, composition coupée en deux, perdant à gauche, gagnant à droite). Laisser le haut du cadre vide pour le bandeau de texte.
 
 ## 3. Chapitres
 
-8 à 11 chapitres pour 20 minutes (5 à 8 pour un pilote court), 2 à 3 minutes chacun, nommés sur le modèle « The [Nom] of [Chose] » :
+7 à 10 chapitres de 30 à 60 secondes (7 pour 5 min, 10 pour 7 min), nommés sur le modèle « The [Nom] of [Chose] » :
 The Riddle of…, The Hidden Cost of…, The … Dilemma, What the Data Revealed, The … Mechanism, The Survival Trigger, The Rise of…, The Final Verdict.
 
 Règles YouTube, sinon les chapitres ne s'affichent pas : le premier commence à `00:00`, au moins 3 chapitres, chacun d'au moins 10 secondes, dans l'ordre croissant. Format `mm:ss` suffisant sous une heure.
@@ -100,5 +103,7 @@ YouTube refuse la sauvegarde au-delà de 500 caractères, virgules comprises : c
 Activer dans YouTube Studio le doublage automatique et la traduction des titres et descriptions. La référence est servie en arabe, français, hindi, japonais, portugais, espagnol et plus de 15 autres langues : un spectateur français voit « La vraie raison pour laquelle l'évolution veut votre mort » et entend une voix française. C'est gratuit et invisible dans les statistiques publiques, mais c'est une part réelle de l'audience.
 
 ## 7. Cadence et série
-- Une vidéo par jour pendant 30 jours avant de juger : la référence a percé à la 6ᵉ vidéo, après la reprise quotidienne.
+- Une vidéo tous les deux jours au moins, pendant 30 jours avant de juger : Apefully a percé à la 6ᵉ vidéo ; Afterimath à la 1ʳᵉ (2,6 M) avec une vidéo tous les deux jours ; Monk Mode Films a enchaîné 6 parties de LUST VS LOVE en 9 jours après le succès de la première (2,1 M).
+- Quand une vidéo décolle : une **suite dans les 48 h** (même sujet, autre angle ou « part 2 »), avec les liens vers les parties précédentes en description, comme Monk Mode Films et Chris Gu (« One Room series »).
+- Description à la façon des références : logline en 2 ou 3 phrases, **une maxime d'une ligne** (« Motivation gets you started. Discipline keeps you going. »), la question au spectateur, les chapitres, les **sources** (Afterimath liste chaque étude citée), la ligne d'abonnement, 3 à 5 hashtags ; pour un sujet sensible (santé mentale, addiction), une ligne d'aide (« If this feels out of your control, you're not alone: findahelpline.com »).
 - Carte finale « NEXT : [titre suivant] » 5 secondes ; une chaîne associée en collaboration (fonction « collab » de YouTube) partage les vues entre deux chaînes.

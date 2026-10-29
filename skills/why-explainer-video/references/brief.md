@@ -17,21 +17,24 @@ Pourquoi : sans brief, chaque vidéo sortait avec le même personnage (la fiche 
 | # | Question | Options (la première = défaut) | Clé `brief.json` |
 |---|---|---|---|
 | 1 | **Sujet / thème** (seulement s'il manque) | question libre : lieu, organisation, paradoxe, « comme la vidéo X » | `subject` |
-| 2 | **Style de personnage** (`references/character-styles.md`, ids de `scripts/styles.json`) | `stickman-meme` (Recommandé : grosse tête ronde blanche, visage meme, décor saturé) · `egg-headphones` (tête d'œuf, casque orange, storybook crème) · `storybook-human` (humain peint, film d'animation 90s) · `caveman-duo` · `thin-line` · **custom** (décrire en une phrase : l'agent Character designer fait la fiche) | `style`, `character` |
-| 3 | **Voix : moteur et langue** (`references/voice.md`) | `Gemini TTS, anglais` (Recommandé : voix studio, style dirigé par une phrase ; clé API Gemini et quota) · `Gemini TTS, français` · `edge-tts, anglais` (gratuit, sans clé, moins dirigeable) · `edge-tts, français` ; autre langue en « autre » | `voice.engine`, `voice_language` |
-| 4 | **Livrable** | script + plan de production (défaut) · script seul · production complète (script, images Flow, montage, fiche de publication) | `deliverable` |
+| 2 | **Durée** | `5 min` (défaut : le format des chaînes de référence, 750 à 900 mots) · `4 min` · `7 min` (maximum, norme 2 du `SKILL.md`) | `duration_min` |
+| 3 | **Livrable** | production complète (défaut pour The Hidden Bargain : script, images Flow, montage, miniature, fiche de publication) · script + plan de production · script seul | `deliverable` |
+
+**Pas de question de style, de format ni de voix pour The Hidden Bargain** (normes de la section 0 du `SKILL.md`, mesurées le 29 octobre 2026 : la seule vidéo courte à miniature caveman-duo a fait 269 vues, les autres 4 à 37 ; une chaîne = un format, un univers, une miniature). Si le sujet demandé est une histoire de survie jour par jour, le signaler et proposer la chaîne Ifverse Tales (skill `what-if-story-video`). Le tour 1 confirme en une ligne : « intérieur thin-line, miniature caveman-duo, voix edge-tts en-US-GuyNeural -5 % (ou Gemini TTS Kore si une clé GEMINI_API_KEY est dans le .env), comme l'épisode précédent ». Pour une **autre chaîne**, poser en plus les deux questions d'origine : style (`stickman-meme`, `egg-headphones`, `storybook-human`, `caveman-duo`, `thin-line`, custom via l'agent Character designer) et voix (`references/voice.md`).
 
 Paramètres annoncés avec leur défaut, **sans question** (l'utilisateur les change s'il veut, dans la même réponse) :
 
 | Paramètre | Défaut | Clé |
 |---|---|---|
-| Durée | celle du format (11 min 30 survie, 20 à 24 min explainer) | `duration_min` |
-| Ton | celui du format (documentaire sombre / documentaire chaleureux) | `tone` |
-| Costume du personnage | celui du style (`costume` dans `styles.json`) ; pour un récit par grades ou saisons, une liste de costumes par étape | `character.costume` |
-| Décor en une phrase | déduit du sujet, recopié dans chaque prompt | `setting` |
-| Voix : nom, style, débit | Gemini : `Kore`, style « calm, slow, low-pitched documentary narration, no enthusiasm » ; edge-tts : `en-US-GuyNeural` ou `fr-FR-HenriNeural`, débit `+0%` | `voice.name`, `voice.style`, `voice.rate` |
-| Miniature | `split-before-after` pour `stickman-meme` (perdant à gauche, gagnant à droite), `character-prop` pour les autres | `thumbnail` |
-| Série | épisode 1, pas de suite prévue | `series` |
+| Durée | 5 min (explainer The Hidden Bargain), 7 min au plus | `duration_min` |
+| Ton | documentaire chaleureux | `tone` |
+| Costume du personnage | `barefoot` (le style) ; par étape si le récit change de lieu ou de moment (nuit : « a grey wool blanket over the shoulders », labo : « white lab coats over the fur tunics ») | `character.costume`, `character.costumes_by_stage` |
+| Décor en une phrase | **neutre** (« each scene in its own place as described below, drawn as a full painted set with depth ») : chaque texte de scène décrit son propre lieu, sinon Flow mélange savane et salle de bain | `setting` |
+| Voix : nom, style, débit | edge-tts : `en-US-GuyNeural`, débit `-5%` (≈ 150 mots/min avec les pauses) ; Gemini : `Kore`, style « calm, slow, low-pitched documentary narration, no enthusiasm » | `voice.name`, `voice.style`, `voice.rate` |
+| Miniature | toujours le gabarit `thumbnail` de `caveman-duo` (duo expressif, un accessoire, nuit et feu de camp, bandeau vide en haut), quel que soit le style intérieur ; texte = 2 à 4 mots en anglais grammatical (norme 4 du `SKILL.md`), relu par l'English copy editor, posé par `scripts/thumb.py` | `thumbnail_style`, `thumbnail` |
+| Série | numéro d'épisode et liste des vidéos déjà publiées (pour le Story architect) | `series` |
+
+**Si le sujet est déjà donné** (« fais-moi une vidéo sur les dents de sagesse »), le tour 1 n'est pas une question : une seule ligne de confirmation (« Dents de sagesse, 5 min, production complète, intérieur thin-line, miniature caveman-duo, edge-tts GuyNeural -5 % : je lance les 3 angles »), et on passe au tour 2. L'utilisateur corrige dans sa réponse s'il veut autre chose.
 
 Si le style est **custom** : lancer l'agent **Character designer** (`references/agents.md`) avec la phrase de l'utilisateur, montrer la fiche obtenue (fiche de prompt en anglais, 3 expressions, accessoire signature, phrase QC), la faire valider dans le tour 2 en même temps que le scénario.
 
@@ -46,31 +49,32 @@ Si le style est **custom** : lancer l'agent **Character designer** (`references/
 
 ```json
 {
-  "format": "survival-story-video",
-  "subject": "a Soviet polar station cut off after a radio blackout",
-  "style": "stickman-meme",
+  "format": "why-explainer-video",
+  "subject": "the human appendix: Darwin called it useless in 1871; Duke 2007 showed it is a safe house of gut bacteria",
+  "style": "thin-line",
+  "thumbnail_style": "caveman-duo",
   "character": {
-    "costume": "wearing a torn orange parka and a grey wool hat",
-    "costumes_by_stage": null,
+    "costume": "barefoot",
+    "costumes_by_stage": [{"stage": "night", "costume": "barefoot, a grey wool blanket over the shoulders"}, {"stage": "past", "costume": "barefoot"}],
     "sheet": null,
     "name": null
   },
-  "setting": "a small Antarctic research station of three plywood modules on a white plateau",
+  "setting": "each scene in its own place as described below, drawn as a full painted set with depth",
   "voice_language": "en",
-  "voice": { "engine": "gemini", "name": "Kore", "style": "calm, slow, low-pitched documentary narration, no enthusiasm", "rate": "+0%", "model": "gemini-3.8-flash-tts" },
-  "duration_min": 11.5,
-  "tone": "dark-documentary",
-  "thumbnail": "split-before-after",
+  "voice": { "engine": "edge", "name": "en-US-GuyNeural", "style": "calm, slow, low-pitched documentary narration, no enthusiasm", "rate": "-5%", "model": null },
+  "duration_min": 5,
+  "tone": "warm-documentary",
+  "thumbnail": "character-prop",
   "deliverable": "script+production",
   "scenario": {
     "choice": "A",
-    "title": "365 Days Alone at the Bottom of the World",
+    "title": "Why Evolution Refused to Delete Your Appendix (It Was Never Useless)",
     "logline": "...",
     "hook": "...",
-    "twist_type": "fausse sécurité",
-    "motif": "the 4:17 a.m. radio tone"
+    "twist_type": "a famous scientist was wrong + a job discovered recently",
+    "motif": "tap water cupped in both hands"
   },
-  "series": { "episode": 1, "previous_videos": [] },
+  "series": { "episode": 2, "previous_videos": ["Why Evolution Kept Your Goosebumps (They Were Never Useless)"] },
   "validated_by_user": true
 }
 ```

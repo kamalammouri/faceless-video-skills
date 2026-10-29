@@ -1,6 +1,6 @@
 {
  "_doc": "Character styles of the channel. prompts.py picks one (--style, else brief.json, else 'default') and assembles every Flow prompt from it. Slots: {costume} in 'character' is filled from brief.json character.costume, else from the style's own 'costume'. 'thumbnail' is a template for the thumbnail prompt (filled by hand or by the orchestrator). 'qc' is the short description given to the Image QC agent. Human-readable catalogue: references/character-styles.md. 'insert_prefix' replaces 'prefix' for icon/schema/metaphor/map (plain background, no painted set). 'scene_bg_nochar' replaces 'scene_bg' on scenes without the recurring character. The character sheet goes into scene shots only; a metaphor gets it only with withchar: true.",
- "default": "stickman-meme",
+ "default": "thin-line",
  "styles": {
   "stickman-meme": {
    "label": "Stickman meme : grosse tête ronde blanche, visage rage-comic, trait noir épais, décor peint saturé (miniatures Galon Zéro)",
@@ -37,21 +37,21 @@
    "scene_bg_nochar": "Full coloured set with simple flat shapes and a soft gradient sky or wall; any people are small simple figures in the background."
   },
   "caveman-duo": {
-   "label": "Duo d'hommes des cavernes cartoon : gros yeux, membres en bâtons, couleurs saturées (miniatures Apefully / The Hidden Bargain)",
+   "label": "Duo d'hommes des cavernes cartoon : gros yeux, membres en batons, couleurs saturées. Miniature unique de la chaîne The Hidden Bargain (thumbnail_style), jamais l'intérieur.",
    "prefix": "Bold cartoon illustration, thick black ink outlines, saturated colours, painted background with depth, 16:9 wide format.",
    "character": "Recurring characters: two expressive caveman mascots, a man and a woman, in spotted fur tunics, messy brown hair, big round eyes, thin stick limbs, {costume}. Keep these exact character designs in every image.",
    "costume": "barefoot",
-   "scene_bg": "Full painted set (savannah, cave, campfire at night, modern room for the present day), the pair medium in the frame.",
+   "scene_bg": "Full painted set of the place described above, the pair medium in the frame.",
    "insert_bg": "Plain off-white background, nothing else drawn around the subject, the subject centred with generous empty space.",
-   "dark": "Dark variant: same drawing style, but a night scene with deep blue shadows and a single campfire as the light source.",
-   "dark_scene_bg": "Full painted set at night, deep blue shadows, one campfire light.",
+   "dark": "Dark variant: same drawing style, a night palette with deep blue shadows and one warm light source as described in the scene.",
+   "dark_scene_bg": "Full painted set at night, deep blue shadows.",
    "dark_insert_bg": "Dark navy background, nothing else drawn around the subject, the subject centred.",
    "pov_hands": "the character's cartoon hands visible at the bottom of the frame",
    "suffix": "no text, no letters, no numbers, no speech bubbles, no signs, no labels, no watermark.",
    "thumbnail": "{prefix} {character} {emotion} (shock, sweat drops, tears), one single prop that says the subject: {prop}, {setting} at {moment}, a large empty band across the top for text. {suffix}",
    "qc": "two cavemen (man and woman), spotted fur tunics, messy brown hair, big round eyes, thin stick limbs",
    "insert_prefix": "Bold cartoon illustration, thick black ink outlines, saturated colours, flat plain background, 16:9 wide format.",
-   "scene_bg_nochar": "Full painted set; any people are small simple cartoon figures in the background."
+   "scene_bg_nochar": "Full painted set of the place described above, the figure drawn plainer and less detailed than a mascot."
   },
   "storybook-human": {
    "label": "Humain peint, style film d'animation années 90 : un protagoniste réaliste, décors peints chauds (intérieur des vidéos Galon Zéro)",
@@ -71,7 +71,7 @@
    "scene_bg_nochar": "Full painted set with depth and period-accurate props; any people drawn with the same care, none singled out."
   },
   "thin-line": {
-   "label": "Trait fin générique : fond crème, encre noire fine, pastels, personnages à tête ronde blanche (explainers Apefully anciens)",
+   "label": "Trait fin générique : fond crème, encre noire fine, pastels, personnages à tête ronde blanche (intérieur des vidéos The Hidden Bargain, explainers Apefully anciens)",
    "prefix": "Minimal hand-drawn explainer illustration, thin black ink outline, flat pastel fills (sand, sage green, dusty blue, terracotta, soft orange), plain cream paper background, no gradients, no photorealism, 16:9, centred composition, generous empty space.",
    "character": "Recurring character: a simple round-headed white figure with dot eyes and thin stick limbs, {costume}. Keep this exact character design in every image.",
    "costume": "wearing a mustard yellow top",

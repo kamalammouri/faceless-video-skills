@@ -38,3 +38,9 @@ Dans les deux cas, **le minutage vient du script, pas du moteur** : `tts.py` gé
 - `ffmpeg not found` : `pip install imageio-ffmpeg` (déjà requis par le montage).
 - Un clip sonne différemment des autres : supprimer son `.wav` dans `tts/<moteur>/` et relancer, ou reformuler la phrase.
 - Modèle Gemini refusé : `--model gemini-2.5-flash-preview-tts` passe par l'ancienne voie (`generate_content`), le script la gère.
+
+## Voicebox (local, gratuit) et le contrôle du rythme
+
+`--engine voicebox` parle à l'application Voicebox (jamiepine/voicebox, API locale `http://127.0.0.1:17493`) : `voice` = nom d'un profil créé dans l'application (préréglage `kokoro` ou `qwen_custom_voice`), `model` = le moteur, `style` = la consigne `instruct`. Mesuré le 28 octobre 2026 sur CPU : Kokoro 5 s par phrase, débit régulier, timbre plat ; Qwen « Ryan » 95 s par phrase, timbre naturel, mais **un tempo différent à chaque phrase** (1,3 à 3,6 mots par seconde sur 64 clips) quand chaque phrase est générée seule avec une graine aléatoire ; c'est ce rythme saccadé qui a été reproché à l'épisode ronflement.
+
+Depuis le 29 octobre 2026, `tts.py` applique trois garde-fous au moteur voicebox : une **graine fixe** pour toute la vidéo (`--seed`, 42 par défaut, ou `voice.seed` du brief), la consigne « steady even pace, no rushing, no dramatic pauses » ajoutée au style, et un **contrôle du débit** : chaque clip est mesuré en mots par seconde de parole (silences de bord retirés) ; hors de `--rate-min 1.8` .. `--rate-max 2.8`, il est régénéré avec la graine suivante, jusqu'à `--tries 3`, et le clip le plus proche du milieu de la plage est gardé. Kokoro en est exempté (déterministe). Si cela ne suffit pas, l'étape suivante est la génération par chapitre (Voicebox découpe à 800 caractères avec fondu) avec un recalage des phrases par transcription Whisper.

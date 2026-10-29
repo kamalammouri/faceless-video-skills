@@ -29,7 +29,7 @@ console.log(`${stamp()} ${prompts.length} prompts, ${todo.length} to generate, p
 
 const { page } = await attach(); page.setDefaultTimeout(15_000);
 const box = () => page.getByRole('textbox', { name: /Que voulez-vous créer|What do you want to create/i }).first();
-const genButton = () => page.getByRole('button', { name: /Lancer la génération|^Generate$|Générer/i }).first();
+const genButton = () => page.getByRole('button', { name: /Lancer la génération|^Generate$|Générer|Start generation/i }).first();
 const groups = () => page.locator('main [role="group"]');
 async function attachRef(prompt) {   // open the ingredient picker, search the reference by its caption, click it (it becomes a chip in the prompt bar)
   const chip = page.getByRole('button', { name: /^Ingrédient$|^Ingredient$/ });
