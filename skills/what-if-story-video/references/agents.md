@@ -7,12 +7,13 @@ Un seul rédacteur qui écrit, dessine, vérifie et publie finit par se répéte
 | Étape | Agents en parallèle | Entrée | Sortie attendue |
 |---|---|---|---|
 | Au brief, tour 1, si le style est « custom » | **Character designer** | la phrase de l'utilisateur, `scripts/styles.json`, les étapes du récit | fiche de personnage à faire valider par l'utilisateur |
-| Au brief, tour 2, avant tout brouillon | **Story architect** | sujet, règles du format, `brief.json`, vidéos déjà publiées | 3 angles ; l'utilisateur en choisit un |
+| Au brief, tour 2, avant tout brouillon | **Story architect** | sujet, règles du format, `brief.json`, vidéos déjà publiées | 3 angles ; l'utilisateur en choisit un ; chaque hook noté par `python ~/.claude/skills/yt-script/hookscore.py --hook "…"` (score montré à côté) |
 | Après le brouillon du script | **Fact-checker** + **Script critic** | le script | liste de corrections, chacune avec la phrase visée |
 | Après la liste d'images | **Visual director** + **Prompt auditor** | shot list + préfixe de style | shot list corrigée, prompts réécrits |
 
 Contrainte de production à appliquer en premier : le **budget Flow** (5 images Flow par minute de vidéo au plus). Quand la liste dépasse, proposer les plans à tenir sur plusieurs phrases (même `file`) et les inserts à rendre par code plutôt que par Flow.
 | Après la génération des images | **Image QC** (vision) | planche contact + shot list | liste des images à régénérer avec le nouveau prompt |
+| Avant la fiche de publication | **Packaging strategist** (`agents/packaging-strategist.md`) | script final + `timing.json` + gabarit de titre | 2 paires titre + texte de miniature passées par `yt-package/title.py`, description et tags (`yt-seo`), chapitres validés par `yt-chapters/chapters.py` |
 | Avant livraison | **Publication checker** | fiche de publication + voice.json | fiche corrigée ou « OK » |
 
 L'orchestrateur ne refait pas le travail des agents : il applique leurs corrections, relance ce qui doit l'être (régénération Flow des rejets), et passe la checklist finale.

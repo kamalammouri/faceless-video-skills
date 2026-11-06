@@ -15,17 +15,47 @@ The skills are written in French (the instructions Claude reads); the videos the
 
 ## Install
 
-**Claude Code**: copy a skill folder into your skills directory, then start a new session.
+**Windows (one command)**: copies the four skills and the agents to `~/.claude`, adds the vetted third-party YouTube skills (pinned commit), and builds the Hermes agent team when `hermes` is on PATH.
 
-```bash
+```powershell
 git clone https://github.com/kamalammouri/faceless-video-skills
-cp -r faceless-video-skills/skills/why-explainer-video ~/.claude/skills/
-cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
-cp -r faceless-video-skills/skills/what-if-story-video ~/.claude/skills/
-cp -r faceless-video-skills/skills/hand-drawn-visuals ~/.claude/skills/
+cd faceless-video-skills
+powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
+**macOS / Linux, by hand**: copy each `skills/<skill>` folder to `~/.claude/skills/` and `agents/*.md` to `~/.claude/agents/`, then start a new session.
+
 **claude.ai / Claude desktop**: zip a skill folder (the folder itself as the root of the archive) and upload it in Settings → Skills.
+
+## Hermes agent team
+
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research) runs each production role as its own **profile**: separate memory, a `SOUL.md` taken from `agents/<role>.md`, and the skills of `~/.claude/skills` (the same files Claude Code reads, through `skills.external_dirs`). `hermes/setup-team.ps1` creates them (`install.ps1` calls it):
+
+| Profile | Role | Skills it loads |
+|---|---|---|
+| `story-architect` | three scenario angles at the brief | `yt-script` (hook scoring) |
+| `character-designer` | custom character sheet | – |
+| `fact-checker` | every name, year, number checked on the web | – |
+| `visual-director` | shot-list variety audit | `hand-drawn-visuals` |
+| `image-qc` | vision check of the contact sheet | – |
+| `packaging-strategist` | title + thumbnail pairing, description, tags, chapters | `yt-package`, `yt-seo`, `yt-chapters`, `yt-script` |
+
+The skill session stays the orchestrator and calls a role in one command: `hermes -p fact-checker -z --query-file brief.txt` (add `--image sheet.jpg` for Image QC). Install Hermes yourself first, in PowerShell: `iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)`, then `hermes setup` (provider and key). Without Hermes, the same briefs run with Claude Code's Agent tool.
+
+## Third-party skills
+
+Eight skills were proposed by the video "8 Claude Skills for YouTube and motion design" (Mutqin, 3 Nov 2026). Each repository was cloned and read (SKILL.md, scripts, network and shell calls) before deciding:
+
+| Skill | Verdict | Why |
+|---|---|---|
+| [youtube-agent-skill](https://github.com/Jakeschincariol/youtube-agent-skill) | **kept**: `yt-script`, `yt-package`, `yt-seo`, `yt-chapters`, `yt-retention`, `yt-shorts` (+ `yt-edit`, needed by two of them) | MIT, 4.7k★, short skills, stdlib-only Python that reads local files and never calls the network; real linters (hook score, title/thumbnail truncation and duplication, chapter rules) the pipeline lacked |
+| [claude-youtube](https://github.com/AgriciDaniel/claude-youtube) | skipped | 39k words of context for one skill, overlaps `youtube-boost-usa` and the publication sheets, paid DataForSEO for the data part |
+| [youtube-script-writer](https://github.com/mohitagw15856/pm-claude-skills) | skipped | generic talking-head script; the four format templates here are measured on reference channels, and `yt-script` covers the hook |
+| [content-os](https://github.com/cdeistopened/content-os) | skipped | archived, 9★, 228k words across 36 skills |
+| [claude-motion](https://github.com/whaleyxbt/claude-motion) | skipped | a Remotion project, not a drop-in skill; the slideshow is static by design and HyperFrames covers motion |
+| [claude-motion-design](https://github.com/howseen-ai/claude-motion-design) | skipped | personal pipeline with hard-coded paths and brand rules of its author |
+| [claude-remotion-skill](https://github.com/haidrrrry/claude-remotion-skill) | skipped | duplicates `remotion-best-practices` |
+| [remotion-graphics](https://github.com/agamm/video-agent) | skipped | depends on its own repo's overlay skills; Remotion needs a company license |
 
 ## What each skill contains
 
@@ -113,7 +143,7 @@ Shapes and hachures by [rough.js](https://roughjs.com) (MIT), icons from [Lucide
 
 ## Production agents
 
-`agents/` holds Claude Code agent definitions (copy them to `.claude/agents/` in your project): `story-architect` (three scenario angles for the user to choose from), `character-designer` (prompt sheet of a custom character), `fact-checker`, `visual-director` (shot-list variety audit), `image-qc` (vision check of the contact sheet against the character sheet of the brief: speech bubbles, text, wrong character). The full briefs, including Script critic, Prompt auditor and Publication checker, are in each skill's `references/agents.md`, so they work with the plain Agent tool too.
+`agents/` holds Claude Code agent definitions (copy them to `.claude/agents/` in your project): `story-architect` (three scenario angles for the user to choose from), `character-designer` (prompt sheet of a custom character), `fact-checker`, `visual-director` (shot-list variety audit), `image-qc` (vision check of the contact sheet against the character sheet of the brief: speech bubbles, text, wrong character), `packaging-strategist` (title + thumbnail pairing linted by `yt-package`, description, tags, chapters). The full briefs, including Script critic, Prompt auditor and Publication checker, are in each skill's `references/agents.md`, so they work with the plain Agent tool too.
 
 ## Reference channel catalogue
 
