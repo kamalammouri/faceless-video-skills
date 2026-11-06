@@ -45,7 +45,7 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 **Anti-hallucination loop.** `hermes/grounding.md` is appended to every role: nothing from memory is a fact, every name, year and number carries its source or `[to verify]`, missing input is reported instead of guessed, linters are run and their output pasted. `hermes/loop.ps1` then runs a bounded producer → checker loop:
 
 ```powershell
-powershell -File hermes\loop.ps1 -Role story-architect -Brief workngles.txt            # checker: fact-checker, 3 rounds max
+powershell -File hermes\loop.ps1 -Role story-architect -Brief work\angles.txt            # checker: fact-checker, 3 rounds max
 powershell -File hermes\loop.ps1 -Role packaging-strategist -Brief work\pack.txt -Max 2
 ```
 
