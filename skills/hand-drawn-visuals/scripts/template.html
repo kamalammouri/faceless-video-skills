@@ -61,7 +61,7 @@ function sketchIcon(svgText, x, y, size, colour, fill) {
     else if (t === 'ellipse') node = rc.ellipse(a('cx'), a('cy'), a('rx') * 2, a('ry') * 2, o);
     else if (t === 'line') node = rc.line(a('x1'), a('y1'), a('x2'), a('y2'), o);
     else if (t === 'rect') node = rc.rectangle(a('x'), a('y'), a('width'), a('height'), o);
-    else { const pts = el.getAttribute('points').trim().split(/\s+/).map(p => p.split(',').map(Number)); node = t === 'polygon' ? rc.polygon(pts, o) : rc.linearPath(pts, o); }
+    else { const n = el.getAttribute('points').trim().split(/[\s,]+/).map(Number), pts = []; for (let i = 0; i + 1 < n.length; i += 2) pts.push([n[i], n[i + 1]]); node = t === 'polygon' ? rc.polygon(pts, o) : rc.linearPath(pts, o); }  // Lucide writes "12 2 20 7" (spaces only): pair the numbers, else NaN points hang rough.js
     if (node) g.appendChild(node);
   }
   svg.appendChild(g);
