@@ -29,18 +29,29 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 
 ## Hermes agent team
 
-[Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research) runs each production role as its own **profile**: separate memory, a `SOUL.md` taken from `agents/<role>.md`, and the skills of `~/.claude/skills` (the same files Claude Code reads, through `skills.external_dirs`). `hermes/setup-team.ps1` creates them (`install.ps1` calls it):
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research) runs each production role as its own **profile**. `hermes/setup-team.ps1` creates them (`install.ps1` calls it); re-run it after editing an agent or a skill.
 
-| Profile | Role | Skills it loads |
-|---|---|---|
-| `story-architect` | three scenario angles at the brief | `yt-script` (hook scoring) |
-| `character-designer` | custom character sheet | – |
-| `fact-checker` | every name, year, number checked on the web | – |
-| `visual-director` | shot-list variety audit | `hand-drawn-visuals` |
-| `image-qc` | vision check of the contact sheet | – |
-| `packaging-strategist` | title + thumbnail pairing, description, tags, chapters | `yt-package`, `yt-seo`, `yt-chapters`, `yt-script` |
+| Profile | Role | Model | Skills in the profile |
+|---|---|---|---|
+| `story-architect` | three scenario angles at the brief | Sonnet | `yt-script` (hook scoring) |
+| `character-designer` | custom character sheet | Haiku | – |
+| `fact-checker` | every name, year, number checked on the web; default checker of the loop | Sonnet | – |
+| `visual-director` | shot-list variety audit | Haiku | `hand-drawn-visuals` |
+| `image-qc` | vision check of the contact sheet | Sonnet | – |
+| `packaging-strategist` | title + thumbnail pairing, description, tags, chapters | Haiku | `yt-package`, `yt-seo`, `yt-chapters`, `yt-script` |
 
-The skill session stays the orchestrator and calls a role in one command: `hermes -p fact-checker -z --query-file brief.txt` (add `--image sheet.jpg` for Image QC). Install Hermes yourself first, in PowerShell: `iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)`, then `hermes setup` (provider and key). Without Hermes, the same briefs run with Claude Code's Agent tool.
+**Token budget.** Every skill a profile can see costs its description in the system prompt of every call, so each profile holds only its own skills: the bundled Hermes catalogue is removed (`skills opt-out --remove`) and `~/.claude/skills` is not indexed. Memory is off (the workers are stateless, the brief carries everything), `agent.max_turns` is 20, the "save a skill" nudges are off, and roles that follow a checklist or run a script use the cheap model. Model ids are at the top of `setup-team.ps1`. Briefs should name files (the script, `shots.json`) rather than paste them, and every call writes a usage report (`--usage-file`) so the cost of a video can be read afterwards.
+
+**Anti-hallucination loop.** `hermes/grounding.md` is appended to every role: nothing from memory is a fact, every name, year and number carries its source or `[to verify]`, missing input is reported instead of guessed, linters are run and their output pasted. `hermes/loop.ps1` then runs a bounded producer → checker loop:
+
+```powershell
+powershell -File hermes\loop.ps1 -Role story-architect -Brief workngles.txt            # checker: fact-checker, 3 rounds max
+powershell -File hermes\loop.ps1 -Role packaging-strategist -Brief work\pack.txt -Max 2
+```
+
+The checker is always another profile (an agent does not grade its own work) and reads only the answer. It returns PASS, or FAIL with numbered problems (exact phrase, what is wrong, corrected value with source). On FAIL the role gets back the brief, its previous answer and the problems, nothing else, so a retry costs one answer plus one list, not the whole history. After the last round an answer that never passed is saved with an `UNVERIFIED` header. Output: `<brief>.out.md`, plus the token total over all calls.
+
+Install Hermes yourself first, in PowerShell: `iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)`, then `hermes setup` (provider and key). A one-off call without the loop: `hermes -p fact-checker -z --query-file brief.txt`. Without Hermes, the same briefs run with Claude Code's Agent tool.
 
 ## Third-party skills
 
