@@ -15,17 +15,49 @@ The skills are written in French (the instructions Claude reads); the videos the
 
 ## Install
 
-**Claude Code**: copy a skill folder into your skills directory, then start a new session.
+**Windows (one command)**: copies the four skills and the agent team to `~/.claude` and adds the vetted third-party YouTube skills (pinned commit). No API key needed.
 
-```bash
+```powershell
 git clone https://github.com/kamalammouri/faceless-video-skills
-cp -r faceless-video-skills/skills/why-explainer-video ~/.claude/skills/
-cp -r faceless-video-skills/skills/survival-story-video ~/.claude/skills/
-cp -r faceless-video-skills/skills/what-if-story-video ~/.claude/skills/
-cp -r faceless-video-skills/skills/hand-drawn-visuals ~/.claude/skills/
+cd faceless-video-skills
+powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
+**macOS / Linux, by hand**: copy each `skills/<skill>` folder to `~/.claude/skills/` and `agents/*.md` to `~/.claude/agents/`, then start a new session.
+
 **claude.ai / Claude desktop**: zip a skill folder (the folder itself as the root of the archive) and upload it in Settings → Skills.
+
+## Agent team (no API key)
+
+The team runs inside Claude Code with the Agent tool, on the Claude subscription: no extra service, no key. `install.ps1` copies the agents to `~/.claude/agents`; each one has its own model and only the tools it needs.
+
+| Agent | Role | Model | Skills it uses |
+|---|---|---|---|
+| `story-architect` | three scenario angles at the brief | Sonnet | `yt-script` (hook scoring) |
+| `character-designer` | custom character sheet | Haiku | – |
+| `fact-checker` | every name, year, number checked on the web; default checker of the loop | Sonnet | – |
+| `visual-director` | shot-list variety audit | Haiku | `hand-drawn-visuals` |
+| `image-qc` | vision check of the contact sheet | Sonnet | – |
+| `packaging-strategist` | title + thumbnail pairing, description, tags, chapters | Haiku | `yt-package`, `yt-seo`, `yt-chapters`, `yt-script` |
+
+**Anti-hallucination.** Every agent ends with the same grounding rules: nothing from memory is a fact, every name, year and number carries its source or `[to verify]`, missing input is reported instead of guessed, linters are run and their output pasted. On top of that, each skill's `references/agents.md` defines a **verification loop**: the role answers, another agent (`fact-checker` by default) reads only that answer and returns PASS or FAIL with numbered problems, the role fixes only those, at most 3 rounds; an answer that never passed is shown as `NON VÉRIFIÉ` and never published.
+
+**Token budget.** Haiku for the roles that follow a checklist or run a script, Sonnet for research and vision; the checker reads only the answer and a retry sends back only the answer and the problems, not the history; agents receive file paths rather than pasted content.
+
+## Third-party skills
+
+Eight skills were proposed by the video "8 Claude Skills for YouTube and motion design" (Mutqin, 3 Nov 2026). Each repository was cloned and read (SKILL.md, scripts, network and shell calls) before deciding:
+
+| Skill | Verdict | Why |
+|---|---|---|
+| [youtube-agent-skill](https://github.com/Jakeschincariol/youtube-agent-skill) | **kept**: `yt-script`, `yt-package`, `yt-seo`, `yt-chapters`, `yt-retention`, `yt-shorts` (+ `yt-edit`, needed by two of them) | MIT, 4.7k★, short skills, stdlib-only Python that reads local files and never calls the network; real linters (hook score, title/thumbnail truncation and duplication, chapter rules) the pipeline lacked |
+| [claude-youtube](https://github.com/AgriciDaniel/claude-youtube) | skipped | 39k words of context for one skill, overlaps `youtube-boost-usa` and the publication sheets, paid DataForSEO for the data part |
+| [youtube-script-writer](https://github.com/mohitagw15856/pm-claude-skills) | skipped | generic talking-head script; the four format templates here are measured on reference channels, and `yt-script` covers the hook |
+| [content-os](https://github.com/cdeistopened/content-os) | skipped | archived, 9★, 228k words across 36 skills |
+| [claude-motion](https://github.com/whaleyxbt/claude-motion) | skipped | a Remotion project, not a drop-in skill; the slideshow is static by design and HyperFrames covers motion |
+| [claude-motion-design](https://github.com/howseen-ai/claude-motion-design) | skipped | personal pipeline with hard-coded paths and brand rules of its author |
+| [claude-remotion-skill](https://github.com/haidrrrry/claude-remotion-skill) | skipped | duplicates `remotion-best-practices` |
+| [remotion-graphics](https://github.com/agamm/video-agent) | skipped | depends on its own repo's overlay skills; Remotion needs a company license |
 
 ## What each skill contains
 
@@ -113,7 +145,7 @@ Shapes and hachures by [rough.js](https://roughjs.com) (MIT), icons from [Lucide
 
 ## Production agents
 
-`agents/` holds Claude Code agent definitions (copy them to `.claude/agents/` in your project): `story-architect` (three scenario angles for the user to choose from), `character-designer` (prompt sheet of a custom character), `fact-checker`, `visual-director` (shot-list variety audit), `image-qc` (vision check of the contact sheet against the character sheet of the brief: speech bubbles, text, wrong character). The full briefs, including Script critic, Prompt auditor and Publication checker, are in each skill's `references/agents.md`, so they work with the plain Agent tool too.
+`agents/` holds Claude Code agent definitions (copy them to `.claude/agents/` in your project): `story-architect` (three scenario angles for the user to choose from), `character-designer` (prompt sheet of a custom character), `fact-checker`, `visual-director` (shot-list variety audit), `image-qc` (vision check of the contact sheet against the character sheet of the brief: speech bubbles, text, wrong character), `packaging-strategist` (title + thumbnail pairing linted by `yt-package`, description, tags, chapters). The full briefs, including Script critic, Prompt auditor and Publication checker, are in each skill's `references/agents.md`, so they work with the plain Agent tool too.
 
 ## Reference channel catalogue
 
