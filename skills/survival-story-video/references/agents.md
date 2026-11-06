@@ -16,6 +16,17 @@ Contrainte de production à appliquer en premier : le **budget Flow** (5 images 
 | Avant la fiche de publication | **Packaging strategist** (`agents/packaging-strategist.md`) | script final + `timing.json` + gabarit de titre | 2 paires titre + texte de miniature passées par `yt-package/title.py`, description et tags (`yt-seo`), chapitres validés par `yt-chapters/chapters.py` |
 | Avant livraison | **Publication checker** | fiche de publication + voice.json | fiche corrigée ou « OK » |
 
+## Boucle de vérification (contre les hallucinations)
+
+Toute sortie d'agent qui contient des faits (angles du Story architect, fiche du Character designer, paquet du Packaging strategist) passe par cette boucle avant d'être montrée à l'utilisateur ou appliquée :
+
+1. **Produire** : l'agent du rôle répond au brief (outil Agent, `subagent_type` = le nom du rôle).
+2. **Vérifier** : un **autre** agent, par défaut `fact-checker`, reçoit uniquement la réponse (pas le brief, pas l'historique) et rend `PASS`, ou `FAIL` suivi des problèmes numérotés (phrase exacte | ce qui est faux | valeur corrigée avec source, ou [to verify]). Un agent ne vérifie jamais sa propre sortie.
+3. **Corriger** : sur `FAIL`, relancer l'agent du rôle avec seulement le brief, sa réponse précédente et la liste des problèmes ; il corrige chaque point et ne change rien d'autre.
+4. **S'arrêter** : à `PASS`, ou après **3 tours**. Une réponse jamais validée est montrée avec l'en-tête `NON VÉRIFIÉ` et ses problèmes ouverts ; l'orchestrateur ne la publie pas.
+
+Économie : le vérificateur ne lit que la réponse, une relance ne renvoie que réponse + problèmes, les agents qui suivent une liste de règles (Character designer, Visual director, Packaging strategist) tournent sur Haiku, la recherche et la vision (Story architect, Fact-checker, Image QC) sur Sonnet. Donner aux agents des chemins de fichiers (script, `shots.json`) plutôt que leur contenu collé.
+
 L'orchestrateur ne refait pas le travail des agents : il applique leurs corrections, relance ce qui doit l'être (régénération Flow des rejets), et passe la checklist finale.
 
 ## Briefs (à copier dans le prompt de l'agent, puis compléter les crochets)

@@ -1,5 +1,5 @@
-# Installs the faceless-video skills + agents for Claude Code, the vetted third-party YouTube skills,
-# and (when `hermes` is on PATH) the Hermes agent team. Re-run any time: it overwrites in place.
+# Installs the faceless-video skills + agents for Claude Code and the vetted third-party YouTube skills.
+# No API key: the agents run on the Claude subscription through Claude Code's Agent tool.
 #   powershell -ExecutionPolicy Bypass -File install.ps1          # keeps skills already installed
 #   powershell -ExecutionPolicy Bypass -File install.ps1 -Force   # overwrites them with the repo version
 param([switch]$Force)
@@ -35,9 +35,4 @@ foreach ($s in $vendor.keep) {
 }
 Remove-Item $tmp -Recurse -Force
 
-if (Get-Command hermes -ErrorAction SilentlyContinue) {
-    & "$repo\hermes\setup-team.ps1"
-} else {
-    Write-Host "`nHermes not found: skipped the agent team. Install it, then run hermes\setup-team.ps1 (see README)."
-}
 Write-Host "`nDone. Start a new Claude Code session to load the skills."

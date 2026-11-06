@@ -15,7 +15,7 @@ The skills are written in French (the instructions Claude reads); the videos the
 
 ## Install
 
-**Windows (one command)**: copies the four skills and the agents to `~/.claude`, adds the vetted third-party YouTube skills (pinned commit), and builds the Hermes agent team when `hermes` is on PATH.
+**Windows (one command)**: copies the four skills and the agent team to `~/.claude` and adds the vetted third-party YouTube skills (pinned commit). No API key needed.
 
 ```powershell
 git clone https://github.com/kamalammouri/faceless-video-skills
@@ -27,11 +27,11 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 
 **claude.ai / Claude desktop**: zip a skill folder (the folder itself as the root of the archive) and upload it in Settings → Skills.
 
-## Hermes agent team
+## Agent team (no API key)
 
-[Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research) runs each production role as its own **profile**. `hermes/setup-team.ps1` creates them (`install.ps1` calls it); re-run it after editing an agent or a skill.
+The team runs inside Claude Code with the Agent tool, on the Claude subscription: no extra service, no key. `install.ps1` copies the agents to `~/.claude/agents`; each one has its own model and only the tools it needs.
 
-| Profile | Role | Model | Skills in the profile |
+| Agent | Role | Model | Skills it uses |
 |---|---|---|---|
 | `story-architect` | three scenario angles at the brief | Sonnet | `yt-script` (hook scoring) |
 | `character-designer` | custom character sheet | Haiku | – |
@@ -40,18 +40,9 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 | `image-qc` | vision check of the contact sheet | Sonnet | – |
 | `packaging-strategist` | title + thumbnail pairing, description, tags, chapters | Haiku | `yt-package`, `yt-seo`, `yt-chapters`, `yt-script` |
 
-**Token budget.** Every skill a profile can see costs its description in the system prompt of every call, so each profile holds only its own skills: the bundled Hermes catalogue is removed (`skills opt-out --remove`) and `~/.claude/skills` is not indexed. Memory is off (the workers are stateless, the brief carries everything), `agent.max_turns` is 20, the "save a skill" nudges are off, and roles that follow a checklist or run a script use the cheap model. Model ids are at the top of `setup-team.ps1`. Briefs should name files (the script, `shots.json`) rather than paste them, and every call writes a usage report (`--usage-file`) so the cost of a video can be read afterwards.
+**Anti-hallucination.** Every agent ends with the same grounding rules: nothing from memory is a fact, every name, year and number carries its source or `[to verify]`, missing input is reported instead of guessed, linters are run and their output pasted. On top of that, each skill's `references/agents.md` defines a **verification loop**: the role answers, another agent (`fact-checker` by default) reads only that answer and returns PASS or FAIL with numbered problems, the role fixes only those, at most 3 rounds; an answer that never passed is shown as `NON VÉRIFIÉ` and never published.
 
-**Anti-hallucination loop.** `hermes/grounding.md` is appended to every role: nothing from memory is a fact, every name, year and number carries its source or `[to verify]`, missing input is reported instead of guessed, linters are run and their output pasted. `hermes/loop.ps1` then runs a bounded producer → checker loop:
-
-```powershell
-powershell -File hermes\loop.ps1 -Role story-architect -Brief work\angles.txt            # checker: fact-checker, 3 rounds max
-powershell -File hermes\loop.ps1 -Role packaging-strategist -Brief work\pack.txt -Max 2
-```
-
-The checker is always another profile (an agent does not grade its own work) and reads only the answer. It returns PASS, or FAIL with numbered problems (exact phrase, what is wrong, corrected value with source). On FAIL the role gets back the brief, its previous answer and the problems, nothing else, so a retry costs one answer plus one list, not the whole history. After the last round an answer that never passed is saved with an `UNVERIFIED` header. Output: `<brief>.out.md`, plus the token total over all calls.
-
-Install Hermes yourself first, in PowerShell: `iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)`, then `hermes setup` (provider and key). A one-off call without the loop: `hermes -p fact-checker -z --query-file brief.txt`. Without Hermes, the same briefs run with Claude Code's Agent tool.
+**Token budget.** Haiku for the roles that follow a checklist or run a script, Sonnet for research and vision; the checker reads only the answer and a retry sends back only the answer and the problems, not the history; agents receive file paths rather than pasted content.
 
 ## Third-party skills
 
