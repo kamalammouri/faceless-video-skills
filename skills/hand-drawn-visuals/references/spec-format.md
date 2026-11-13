@@ -26,6 +26,21 @@ Champs communs : `file` (nom du PNG sans extension ; avec `--shots`, calculé `H
 
 `node render.mjs shots.json flow/<video>/html --shots` ne rend que les plans qui portent `html` ; `build_slideshow.py` charge ensuite `flow/<video>/html/H0058.png`. Le champ `dark` du plan est repris par le spec.
 
+## Export animé (`--anim`)
+
+`node render.mjs shots.json out/ --shots --anim` écrit, en plus du PNG, `out/H0058.anim.json` :
+
+```json
+{"dark": false, "html": "<svg class=\"layer\" …>…</svg><div class=\"abs num\" id=\"__ID__-a1\" …>46%</div>",
+ "items": [{"id": "__ID__-a0", "kind": "grow", "ox": 676.7, "oy": 860},
+           {"id": "__ID__-a1", "kind": "count", "to": 46, "pre": "", "suf": "%", "dec": 0, "grp": false, "text": "46%"}]}
+```
+
+- `html` : le contenu de l'insert (1920 × 1080, positions absolues) à placer dans un bloc qui porte les polices `Patrick Hand` (texte) et `Caveat` 700 (classe `num`) ; `out/fonts/fonts.css` donne les `@font-face` vers `assets/fonts/*.woff2`.
+- `items` : les entrées dans l'ordre de lecture. `__ID__` est à remplacer par un identifiant unique dans la page (l'id du plan). `kind` : `grow` / `growx` (échelle Y ou X depuis le point SVG `ox, oy`), `draw` (`paths` = `[{"id", "len"}]`, à tracer par `stroke-dashoffset` de `len` à 0), `pop` (opacité + échelle), `fade` (opacité + glissement), `count` (compter de 0 à `to` avec `pre`, `suf`, `dec` décimales, `grp` = séparateur de milliers ; `text` est le texte final exact).
+- Un texte de classe `num` compte s'il contient un seul nombre ; deux nombres (`3:47`, `1 in 3`) ou une année (1500 à 2100) ne comptent pas.
+- Un PNG redessiné sans `--anim` efface son `.anim.json`.
+
 ## Fonds
 
 `BG=…` et `BG_DARK=…` (chemins d'images) peignent chaque insert sur ces images au lieu du crème ou de la nuit : utiliser les deux pages vides générées une fois dans Flow (`prompts.py` des skills vidéo ajoute `BG` et `BG_DARK` à `prompts.json`), pour que les inserts aient le même grain de papier et la même lumière que les scènes.
