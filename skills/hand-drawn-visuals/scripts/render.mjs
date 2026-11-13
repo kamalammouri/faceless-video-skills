@@ -3,10 +3,12 @@
 //   node render.mjs specs.json out/            -> out/<file>.png for every spec (existing files skipped; --force redraws)
 //   node render.mjs shots.json out/ --shots    -> only the shots that carry an "html" key; file = H<i padded to 4>
 //   node render.mjs --demo out/                -> one PNG per template type, then a contact sheet is up to sheets.py
+//   … --anim                                   -> also out/<file>.anim.json (the insert as an HTML fragment + its entrances, for a
+//                                                 GSAP timeline: hf_build.py of the video skills) and out/fonts/ (woff2 + fonts.css)
 // Env: PLAYWRIGHT_DIR (folder that has node_modules/playwright), BG / BG_DARK (background images painted under every insert,
 //      e.g. the empty pages generated once in Flow), FONT (CSS font-family override).
 // Spec: {"file": "H0012", "type": "symbol", "icon": "check", "caption": "verified", "dark": false}  (all types: references/spec-format.md)
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
@@ -30,7 +32,8 @@ else {
     ? src.filter(s => s.html).map(s => ({ file: `H${String(s.i).padStart(4, '0')}`, dark: !!s.dark, ...s.html }))
     : src;
 }
-const todo = specs.filter(s => flag('--force') || !existsSync(join(outDir, `${s.file}.png`)));
+const anim = flag('--anim');
+const todo = specs.filter(s => flag('--force') || !existsSync(join(outDir, `${s.file}.png`)) || (anim && !existsSync(join(outDir, `${s.file}.anim.json`))));
 console.log(`${specs.length} specs, ${todo.length} to render -> ${outDir}`);
 if (!todo.length) process.exit(0);
 
@@ -49,6 +52,26 @@ for (const s of todo) {
   if (Array.isArray(s.items)) for (const it of s.items) if (it.icon) it.icon_svg = await icon(it.icon);
 }
 
+// --anim: the two hand fonts as local files (a video renderer has no network): Patrick Hand + Caveat 700, OFL licence,
+// latin + latin-ext subsets, fetched once from Google Fonts into vendor/fonts/, then copied next to the inserts.
+if (anim) {
+  const cache = join(HERE, 'vendor', 'fonts');
+  if (!existsSync(join(cache, 'fonts.css'))) {
+    mkdirSync(cache, { recursive: true });
+    const css = await (await fetch('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@700&display=swap',
+      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36' } })).text();
+    let out = '';
+    for (const m of css.matchAll(/\/\* (latin|latin-ext) \*\/\s*(@font-face \{[^}]+\})/g)) {
+      const url = m[2].match(/url\((https:[^)]+\.woff2)\)/)[1], name = `${m[2].match(/font-family: '([^']+)'/)[1].replace(/ /g, '')}-${m[1]}.woff2`;
+      writeFileSync(join(cache, name), Buffer.from(await (await fetch(url)).arrayBuffer()));
+      out += m[2].replace(url, `assets/fonts/${name}`).replace('font-display: swap', 'font-display: block') + String.fromCharCode(10);
+    }
+    if (!out) throw new Error('Google Fonts returned no latin @font-face block: cannot build vendor/fonts');
+    writeFileSync(join(cache, 'fonts.css'), out);
+  }
+  cpSync(cache, join(outDir, 'fonts'), { recursive: true });
+}
+
 const { chromium } = await pw();
 const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || 'chrome', headless: true }).catch(() => chromium.launch({ headless: true }));
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
@@ -62,6 +85,8 @@ for (const s of todo) {
     await page.evaluate(([spec, e]) => window.render(spec, e), [s, env]);
     await page.waitForTimeout(80);
     await page.screenshot({ path: join(outDir, `${s.file}.png`), type: 'png' });
+    if (anim) writeFileSync(join(outDir, `${s.file}.anim.json`), JSON.stringify(await page.evaluate(() => window.exportAnim())));
+    else rmSync(join(outDir, `${s.file}.anim.json`), { force: true });   // a PNG redrawn without --anim: its old animated twin would show the old figure
     ok++; console.log(`  ${s.file} ${s.type}`);
   } catch (e) { console.log(`  ${s.file} ERROR ${e.message.split('\n')[0]}`); }
 }
